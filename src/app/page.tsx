@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 
@@ -13,7 +13,7 @@ const colors = {
 const ANNIVERSARY_DATE_KST = Date.parse("2027-08-04T15:00:00Z");
 
 const FIRST_CODE = "20070805";
-const SECOND_CODE = "3458912256"; 
+const SECOND_CODE = "3458912256";
 
 function useCountdown(targetUtcMs: number) {
   const [now, setNow] = useState<number>(() => Date.now());
@@ -45,23 +45,44 @@ const eras = [
 ];
 
 const allMembersOrdered = [
-  { name: "Taeyeon",  img: "/images/members/taeyeon.jpg" },
-  { name: "Jessica",  img: "/images/members/jessica.jpg" },
-  { name: "Sunny",    img: "/images/members/sunny.jpg" },
-  { name: "Tiffany",  img: "/images/members/tiffany.jpg" },
-  { name: "Hyoyeon",  img: "/images/members/hyoyeon.jpg" },
-  { name: "Yuri",     img: "/images/members/yuri.jpg" },
+  { name: "Taeyeon", img: "/images/members/taeyeon.jpg" },
+  { name: "Jessica", img: "/images/members/jessica.jpg" },
+  { name: "Sunny", img: "/images/members/sunny.jpg" },
+  { name: "Tiffany", img: "/images/members/tiffany.jpg" },
+  { name: "Hyoyeon", img: "/images/members/hyoyeon.jpg" },
+  { name: "Yuri", img: "/images/members/yuri.jpg" },
   { name: "Sooyoung", img: "/images/members/sooyoung.jpg" },
-  { name: "Yoona",    img: "/images/members/yoona.jpg" },
-  { name: "Seohyun",  img: "/images/members/seohyun.jpg" },
+  { name: "Yoona", img: "/images/members/yoona.jpg" },
+  { name: "Seohyun", img: "/images/members/seohyun.jpg" },
 ];
+
+const membersNoJessica = allMembersOrdered.filter(m => m.name !== "Jessica");
+
+function memberForGridIndex(i: number, egg: boolean) {
+  if (egg) return allMembersOrdered[i];      // 0..8 map directly
+  if (i === 4) return null;                  // center → logo
+  const idx = i < 4 ? i : i - 1;             // pack 8 members around center
+  return membersNoJessica[idx];
+}
 
 export default function AnniversaryLanding() {
   const { days, hours, minutes, seconds } = useCountdown(ANNIVERSARY_DATE_KST);
   const [egg, setEgg] = useState(false);
   const [keypadOpen, setKeypadOpen] = useState(false);
-  const [typed, setTyped] = useState("");   
+  const [typed, setTyped] = useState("");
   const [clickSeq, setClickSeq] = useState("");
+
+  // Keypad state
+  const [keypadStage, setKeypadStage] = useState<1 | 2>(2);
+  const [firstSeq, setFirstSeq] = useState("");
+  const [secondSeq, setSecondSeq] = useState("");
+
+  const openKeypad = (stage: 1 | 2) => {
+    setKeypadStage(stage);
+    setKeypadOpen(true);
+    setFirstSeq("");
+    setSecondSeq("");
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -77,6 +98,18 @@ export default function AnniversaryLanding() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [typed]);
+
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startLongPress = () => {
+    if (egg) return; // already unlocked
+    pressTimer.current = setTimeout(() => openKeypad(1), 700);
+  };
+  const endLongPress = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  };
 
   const members = egg ? allMembersOrdered : allMembersOrdered.filter((m) => m.name !== "Jessica");
 
@@ -166,12 +199,38 @@ export default function AnniversaryLanding() {
             >
               <BGOrbs />
               <div className="absolute inset-0 grid grid-cols-3 gap-2 p-2">
-                {Array.from({ length: 9 }).map((_, i) => (
-                  <div key={i} className="rounded-xl bg-white/5 border border-white/10" />
-                ))}
-              </div>
-              <div className="absolute bottom-3 right-3 text-[10px] uppercase tracking-widest text-white/60">
-                Concept Visual — Placeholder
+                {Array.from({ length: 9 }).map((_, i) => {
+                  const isCenter = i === 4;
+
+                  // pick image for each tile (your existing logic)
+                  const data = memberForGridIndex(i, egg); // from your previous step
+                  const src = data ? data.img : "/images/logo/gg-logo.jpg";
+
+                  return (
+                    <div
+                      key={i}
+                      className="relative rounded-xl overflow-hidden border border-white/10 bg-white/5"
+                      {...(isCenter
+                        ? {
+                          onMouseDown: startLongPress,
+                          onMouseUp: endLongPress,
+                          onMouseLeave: endLongPress,
+                          onTouchStart: startLongPress,
+                          onTouchEnd: endLongPress,
+                        }
+                        : {})}
+                    >
+                      <Image
+                        src={src}
+                        alt={data ? `${data.name} portrait` : "Girls' Generation logo"}
+                        fill
+                        sizes="(min-width:1024px) 33vw, 50vw"
+                        className="object-cover"
+                        priority={isCenter}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </motion.div>
           </div>
@@ -285,12 +344,44 @@ export default function AnniversaryLanding() {
 
       {keypadOpen && (
         <SecretKeypad
-          sequenceProgress={clickSeq.length}
-          total={SECOND_CODE.length}
-          onDigit={onKeypadDigit}
-          onClose={() => { setKeypadOpen(false); setClickSeq(""); }}
+          title={keypadStage === 1 ? "Enter Code (1/2)" : "Enter Code (2/2)"}
+          expected={keypadStage === 1 ? FIRST_CODE : SECOND_CODE}
+          progress={
+            keypadStage === 1 ? firstSeq.length : secondSeq.length
+          }
+          total={
+            keypadStage === 1 ? FIRST_CODE.length : SECOND_CODE.length
+          }
+          onDigit={(d) => {
+            if (keypadStage === 1) {
+              const next = (firstSeq + d).slice(0, FIRST_CODE.length);
+              if (FIRST_CODE.startsWith(next)) {
+                setFirstSeq(next);
+                if (next === FIRST_CODE) {
+                  // transition to stage 2
+                  setKeypadStage(2);
+                  setSecondSeq("");
+                }
+              } else {
+                setFirstSeq(""); // reset on wrong step
+              }
+            } else {
+              const next = (secondSeq + d).slice(0, SECOND_CODE.length);
+              if (SECOND_CODE.startsWith(next)) {
+                setSecondSeq(next);
+                if (next === SECOND_CODE) {
+                  setEgg(true);
+                  setKeypadOpen(false);
+                }
+              } else {
+                setSecondSeq(""); // reset on wrong step
+              }
+            }
+          }}
+          onClose={() => setKeypadOpen(false)}
         />
       )}
+
     </div>
   );
 }
@@ -364,26 +455,26 @@ function BackToTop() {
 }
 
 function SecretKeypad({
-  sequenceProgress,
+  title,
+  expected,
+  progress,
   total,
   onDigit,
   onClose,
 }: {
-  sequenceProgress: number;
+  title: string;
+  expected: string;
+  progress: number;
   total: number;
   onDigit: (d: string) => void;
   onClose: () => void;
 }) {
-  const digits = ["1","2","3","4","5","6","7","8","9","0"];
+  const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-    >
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="w-[min(92vw,360px)] rounded-3xl border border-white/10 bg-[#111]/95 p-4 shadow-2xl">
         <div className="flex items-center justify-between">
-          <div className="text-sm font-semibold">Enter Code</div>
+          <div className="text-sm font-semibold">{title}</div>
           <button
             onClick={onClose}
             className="text-xs rounded-lg px-2 py-1 border border-white/20 hover:bg-white/10"
@@ -392,20 +483,18 @@ function SecretKeypad({
           </button>
         </div>
 
-        {/* progress bar */}
         <div className="mt-3 h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
           <div
             className="h-full bg-white transition-all"
-            style={{ width: `${(sequenceProgress / total) * 100}%` }}
+            style={{ width: `${(progress / total) * 100}%` }}
           />
         </div>
         <div className="mt-2 text-[11px] text-white/60">
-          Step 2 of 2 — Tap the tiles in order
+          Tap the tiles in order
         </div>
 
-        {/* keypad */}
         <div className="mt-4 grid grid-cols-3 gap-3">
-          {digits.slice(0,9).map((d) => (
+          {digits.slice(0, 9).map((d) => (
             <button
               key={d}
               onClick={() => onDigit(d)}
@@ -414,9 +503,7 @@ function SecretKeypad({
               {d}
             </button>
           ))}
-          {/* spacer for visual balance */}
           <div />
-          {/* zero key */}
           <button
             onClick={() => onDigit("0")}
             className="aspect-square rounded-2xl border border-white/10 bg-white/5 text-lg font-semibold hover:bg-white/10 active:scale-95 transition"
@@ -427,10 +514,9 @@ function SecretKeypad({
         </div>
 
         <div className="mt-3 text-[11px] text-white/50 text-center tracking-wider">
-          {sequenceProgress}/{total}
+          {progress}/{total}
         </div>
       </div>
     </div>
   );
 }
-
