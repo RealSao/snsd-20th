@@ -57,7 +57,6 @@ const allMembersOrdered = [
 ];
 
 export default function AnniversaryLanding() {
-  const mounted = useHasMounted();
   const { days, hours, minutes, seconds } = useCountdown(ANNIVERSARY_DATE_KST);
   const [egg, setEgg] = useState(false);
   const [keypadOpen, setKeypadOpen] = useState(false);
@@ -103,7 +102,7 @@ export default function AnniversaryLanding() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-full bg-pink-300" style={{ background: colors.pink }} />
-            <span className="font-bold tracking-widest">GIRLS' GENERATION</span>
+            <span className="font-bold tracking-widest">GIRLS&#39; GENERATION</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm">
             <a className="hover:text-pink-200" href="#timeline">Timeline</a>
@@ -128,7 +127,7 @@ export default function AnniversaryLanding() {
               >
                 20 YEARS OF
                 <span className="block bg-gradient-to-r from-pink-200 to-purple-300 bg-clip-text text-transparent">
-                  GIRLS' GENERATION
+                  GIRLS&#39; GENERATION
                 </span>
               </motion.h1>
               <p className="mt-5 text-sm/relaxed text-white/80 max-w-prose">
@@ -273,7 +272,7 @@ export default function AnniversaryLanding() {
       {/* FOOTER */}
       <footer className="py-10 border-t border-white/10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-xs text-white/60 flex flex-col sm:flex-row gap-3 items-center justify-between">
-          <div>© 2007–2027 GIRLS' GENERATION · Fan-made tribute</div>
+          <div>© 2007–2027 GIRLS&#39; GENERATION · Fan-made tribute</div>
           <div className="flex items-center gap-4">
             <a className="hover:text-pink-200" href="#">Official</a>
             <a className="hover:text-pink-200" href="#">Credits</a>
