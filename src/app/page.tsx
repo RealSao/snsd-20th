@@ -9,7 +9,7 @@ import { ERAS } from "@/data/eras";
 import Link from "next/link";
 
 
-// Lazy-load the Canvas only on the client
+// Lazy-load the Canvas only on the client 
 const R3FCanvas = dynamic(
   () => import("@react-three/fiber").then((m) => m.Canvas),
   { ssr: false }
