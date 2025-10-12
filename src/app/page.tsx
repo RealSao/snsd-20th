@@ -1,7 +1,109 @@
 "use client";
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, Suspense, JSX } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import dynamic from "next/dynamic";
+import type { Group } from "three";
+import type { ThreeElements } from "@react-three/fiber";
+
+// Lazy-load the Canvas only on the client
+const R3FCanvas = dynamic(
+  () => import("@react-three/fiber").then((m) => m.Canvas),
+  { ssr: false }
+);
+
+import { OrbitControls, Stage, useGLTF, ContactShadows } from "@react-three/drei";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { Center, Environment } from "@react-three/drei";
+
+type BadgeModelProps = ThreeElements["group"] & {
+  speed?: number;
+};
+
+function BadgeModel({ speed = 0.6, ...props }: BadgeModelProps) {
+  const { scene } = useGLTF("/models/gg-badge.glb");
+  const ref = useRef<Group>(null);
+
+  useFrame((_, dt) => {
+    if (ref.current) ref.current.rotation.y += dt * speed;
+  });
+
+  return <primitive ref={ref} object={scene} {...props} />;
+}
+// Preload the model so it appears instantly when the modal opens
+useGLTF.preload("/models/gg-badge.glb");
+
+function Badge3DView() {
+  return (
+    <div className="h-48 w-full rounded-xl overflow-hidden border border-white/10 bg-black">
+      <R3FCanvas camera={{ position: [0.6, 0.5, 1.6], fov: 45 }}>
+        <color attach="background" args={["#000"]} />
+        <Suspense fallback={null}>
+          <Stage intensity={1.2} environment="city" /* no contactShadow here */>
+            <BadgeModel />
+          </Stage>
+
+          {/* Ground shadow under the badge */}
+          <ContactShadows
+            opacity={0.45}
+            scale={6}
+            blur={2.5}
+            far={4}
+            resolution={512}
+            frames={1}
+          />
+        </Suspense>
+        <OrbitControls enableZoom={false} />
+      </R3FCanvas>
+    </div>
+  );
+}
+
+function MiniBadge3D({ onClick }: { onClick: () => void }) {
+  return (
+    <div
+      onClick={onClick}
+      role="button"
+      className="ml-2 inline-flex items-center justify-center rounded-full overflow-hidden bg-transparent cursor-pointer"
+      style={{ width: 36, height: 36 }}
+    >
+
+      <Canvas
+        gl={{ alpha: true, antialias: true }}
+        camera={{ position: [0, 0, 1.9], fov: 40 }}         // closer camera
+        dpr={[1, 2]}
+      >
+        {/* Brighter scene */}
+        <ambientLight intensity={1.4} />
+        <directionalLight position={[2, 3, 2]} intensity={1.6} />
+        {/* Studio-like reflections */}
+        <Environment preset="studio" />
+
+        <Suspense fallback={null}>
+          {/* Auto-fit model; add slight upscale for presence */}
+          <Center disableZ>
+            <BadgeModel speed={0.35} scale={1.15} />
+          </Center>
+        </Suspense>
+      </Canvas>
+    </div>
+  );
+}
+
+function MiniBadgePlaceholder({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Show nine-member badge"
+      className="ml-2 inline-flex items-center justify-center rounded-full border border-white/10 bg-white text-black"
+      style={{ width: 36, height: 36, fontWeight: 800, fontSize: 14, lineHeight: 1 }}
+    >
+      9
+    </button>
+  );
+}
+
 
 const colors = {
   pink: "#FFCCE5",
@@ -76,6 +178,14 @@ export default function AnniversaryLanding() {
   const [keypadStage, setKeypadStage] = useState<1 | 2>(2);
   const [firstSeq, setFirstSeq] = useState("");
   const [secondSeq, setSecondSeq] = useState("");
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
+  const openBadgeModal = () => setShowBadgeModal(true);
+
+  const closeBadgeModal = () => {
+    setShowBadgeModal(false);
+    try { localStorage.setItem("eggBadgeSeen", "1"); } catch { }
+  };
+
 
   const openKeypad = (stage: 1 | 2) => {
     setKeypadStage(stage);
@@ -113,20 +223,17 @@ export default function AnniversaryLanding() {
 
   const members = egg ? allMembersOrdered : allMembersOrdered.filter((m) => m.name !== "Jessica");
 
+  useEffect(() => {
+    if (!egg) return;
+    (async () => {
+      const confetti = (await import("canvas-confetti")).default;
 
-  const onKeypadDigit = (d: string) => {
-    const next = (clickSeq + d).slice(0, SECOND_CODE.length);
-    setClickSeq(next);
-    if (SECOND_CODE.startsWith(next)) {
-      if (next === SECOND_CODE) {
-        setEgg(true);
-        setKeypadOpen(false); // close keypad when solved
-      }
-    } else {
-      // wrong step → reset just the second stage
-      setClickSeq("");
-    }
-  };
+      // burst 1
+      confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+      // burst 2
+      setTimeout(() => confetti({ particleCount: 60, spread: 100, origin: { y: 0.6 } }), 250);
+    })();
+  }, [egg]);
 
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_50%_-10%,rgba(196,161,255,0.25),transparent),linear-gradient(180deg,#0b0b0b,#141414)] text-white">
@@ -136,6 +243,10 @@ export default function AnniversaryLanding() {
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-full bg-pink-300" style={{ background: colors.pink }} />
             <span className="font-bold tracking-widest">GIRLS&#39; GENERATION</span>
+            {egg &&
+              (showBadgeModal
+                ? <MiniBadgePlaceholder onClick={openBadgeModal} />
+                : <MiniBadge3D onClick={openBadgeModal} />)}
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm">
             <a className="hover:text-pink-200" href="#timeline">Timeline</a>
@@ -372,6 +483,9 @@ export default function AnniversaryLanding() {
                 if (next === SECOND_CODE) {
                   setEgg(true);
                   setKeypadOpen(false);
+
+                  setShowBadgeModal(true);
+                  try { localStorage.removeItem("eggBadgeSeen"); } catch { }
                 }
               } else {
                 setSecondSeq(""); // reset on wrong step
@@ -381,7 +495,7 @@ export default function AnniversaryLanding() {
           onClose={() => setKeypadOpen(false)}
         />
       )}
-
+      {showBadgeModal && <NineBadgeModal onClose={closeBadgeModal} />}
     </div>
   );
 }
@@ -415,12 +529,6 @@ function BGOrbs() {
       <div className="absolute -bottom-16 -right-10 h-48 w-48 rounded-full blur-3xl opacity-40" style={{ background: colors.lavender }} />
     </div>
   );
-}
-
-function useHasMounted() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  return mounted;
 }
 
 function BackToTop() {
@@ -520,3 +628,27 @@ function SecretKeypad({
     </div>
   );
 }
+
+function NineBadgeModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" role="dialog" aria-modal="true">
+      <div className="w-[min(92vw,480px)] rounded-3xl border border-white/10 bg-[#111]/95 p-5 shadow-2xl">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-base font-semibold">OT9 Mode Unlocked</h3>
+          <button onClick={onClose} className="text-xs rounded-lg px-2 py-1 border border-white/20 hover:bg-white/10" aria-label="Close badge">
+            Close
+          </button>
+        </div>
+
+        <div className="mt-4">
+          <Badge3DView />  {/* ⬅️ the 3D canvas */}
+          <p className="mt-4 text-sm text-white/70 text-center">
+            Nine-member tribute enabled. Tap the 9 badge in the header anytime to view again.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
