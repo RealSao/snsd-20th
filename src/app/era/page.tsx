@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ERAS } from "@/data/eras";
+import Link from "next/link";
 
 function cx(...xs: (string | false | undefined)[]) { return xs.filter(Boolean).join(" "); }
 
@@ -31,7 +32,7 @@ export default function EraPage() {
       <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-black/40 bg-black/60 border-b border-white/10">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
           <div className="text-sm tracking-widest">GIRLS&#39; GENERATION · ERA TIMELINE</div>
-          <a href="/" className="text-xs opacity-80 hover:opacity-100 underline underline-offset-4">Home</a>
+          <Link href="/" className="text-xs opacity-80 hover:opacity-100 underline underline-offset-4">Home</Link>
         </div>
       </header>
 
@@ -94,9 +95,7 @@ export default function EraPage() {
                         >
                           Watch Performances
                         </a>
-                        <a href="/#discography" className="px-3 py-2 text-xs rounded-lg border border-white/20 hover:bg-white/10">
-                          Discography
-                        </a>
+                        <Link href="/#discography" className="px-3 py-2 text-xs rounded-lg border border-white/20 hover:bg-white/10">Discography</Link>
                       </div>
                     </div>
                   </div>
