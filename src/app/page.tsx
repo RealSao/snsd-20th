@@ -5,6 +5,9 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import type { Group } from "three";
 import type { ThreeElements } from "@react-three/fiber";
+import { ERAS } from "@/data/eras";
+import Link from "next/link";
+
 
 // Lazy-load the Canvas only on the client
 const R3FCanvas = dynamic(
@@ -249,10 +252,19 @@ export default function AnniversaryLanding() {
                 : <MiniBadge3D onClick={openBadgeModal} />)}
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm">
+            {/* existing in-page anchors (homepage sections) */}
             <a className="hover:text-pink-200" href="#timeline">Timeline</a>
             <a className="hover:text-pink-200" href="#members">Members</a>
             <a className="hover:text-pink-200" href="#discography">Discography</a>
             <a className="hover:text-pink-200" href="#fan">Fan Space</a>
+
+            {/* small divider */}
+            <span aria-hidden className="mx-2 h-4 w-px bg-white/10" />
+
+            {/* NEW: full timeline page */}
+            <Link className="hover:text-pink-200" href="/era" prefetch>
+              Era
+            </Link>
           </nav>
           <a href="#fan" className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 transition text-xs">Leave a Message</a>
         </div>
@@ -347,33 +359,73 @@ export default function AnniversaryLanding() {
           </div>
         </div>
       </section>
+
       {/* ERA RIBBON */}
-      <section id="timeline" className="scroll-mt-24 py-14 border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 className="text-xl font-bold mb-6">Era Ribbon</h2>
-          <div className="relative overflow-x-auto">
-            <div className="min-w-[800px] grid grid-cols-8 gap-3">
-              {eras.map((e) => (
-                <motion.div
-                  key={e.year}
-                  whileHover={{ y: -4 }}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-3"
-                >
-                  <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg border border-white/10">
-                    <Image
-                      src={e.img}
-                      alt={`${e.year} · ${e.label}`}
-                      fill
-                      sizes="(min-width:1024px) 12rem, 60vw"
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="mt-2 text-sm font-semibold">{e.year}</div>
-                  <div className="text-xs text-white/70">{e.label}</div>
-                </motion.div>
-              ))}
-            </div>
+      <section id="timeline" className="py-14 border-t border-white/10">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold">Timeline</h3>
           </div>
+
+          {/* Mobile: vertical timeline */}
+          {/* Mobile: vertical wave timeline (alternating left/right) */}
+          <div className="md:hidden relative mt-6">
+            {/* center vertical line */}
+            <div className="pointer-events-none absolute left-1/2 top-0 bottom-0 w-px bg-white/20" />
+
+            <ol className="relative space-y-10 px-4">
+              {eras.map((e, idx) => {
+                const leftSide = idx % 2 === 0; // alternate sides
+                return (
+                  <li key={e.year} className="relative">
+                    {/* baseline dot */}
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-white" />
+
+                    {/* connector from center line to card */}
+                    <div
+                      className={`absolute top-1/2 h-px bg-white/30`}
+                      style={{
+                        // 18px connector; grows toward the card side
+                        width: 18,
+                        [leftSide ? "left" : "right"]: "50%",
+                        transform: `translate${leftSide ? "X" : "X"}(${leftSide ? "0" : "0"})`,
+                      }}
+                    />
+
+                    {/* card */}
+                    <a
+                      href={`/era#${e.year}`}
+                      className={[
+                        "block rounded-xl overflow-hidden border border-white/10 bg-[#111] shadow-[0_4px_16px_rgba(0,0,0,0.35)]",
+                        "transition-transform duration-200",
+                        leftSide ? "mr-auto origin-left translate-x-2" : "ml-auto origin-right -translate-x-2",
+                      ].join(" ")}
+                      // size: shrinks on tiny screens, caps at ~320px
+                      style={{ width: "min(78vw, 320px)" }}
+                    >
+                      <div className="relative aspect-[4/3]">
+                        <Image
+                          src={e.img}
+                          alt={`${e.year} · ${e.label}`}
+                          fill
+                          sizes="100vw"
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="p-3 text-xs">
+                        <div className="text-white/60">{e.year}</div>
+                        <div className="font-semibold">{e.label}</div>
+                      </div>
+                    </a>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+
+
+          {/* Desktop: horizontal ribbon with center line + wave pattern */}
+          <HorizontalRibbon eras={eras} />
         </div>
       </section>
 
@@ -652,3 +704,94 @@ function NineBadgeModal({ onClose }: { onClose: () => void }) {
 }
 
 
+function classNames(...xs: (string | false | undefined)[]) {
+  return xs.filter(Boolean).join(" ");
+}
+
+const ribbonRef = { current: null as HTMLDivElement | null }; // simple module-level ref holder
+
+function HorizontalRibbon({ eras }: { eras: { year: number; label: string; img: string }[] }) {
+  const localRef = React.useRef<HTMLDivElement | null>(null);
+
+  return (
+    <div className="hidden md:block relative mt-6">
+      {/* 1) Baseline behind everything */}
+      <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-white/20 z-0" />
+
+      {/* 2) Edge fade (nice visual + hides any baseline ends) */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-30 flex">
+        <span className="w-10 bg-gradient-to-r from-[#0b0b0b] to-transparent" />
+        <span className="flex-1" />
+        <span className="w-10 bg-gradient-to-l from-[#0b0b0b] to-transparent" />
+      </div>
+
+      {/* 3) Side arrows */}
+      <button
+        onClick={() => localRef.current?.scrollBy({ left: -420, behavior: "smooth" })}
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-40 rounded-full border border-white/15 bg-black/40 backdrop-blur px-2 py-1 text-xs hover:bg-white/15"
+        aria-label="Scroll left"
+      >
+        ←
+      </button>
+      <button
+        onClick={() => localRef.current?.scrollBy({ left: 420, behavior: "smooth" })}
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-40 rounded-full border border-white/15 bg-black/40 backdrop-blur px-2 py-1 text-xs hover:bg-white/15"
+        aria-label="Scroll right"
+      >
+        →
+      </button>
+
+      {/* 4) Scroll area */}
+      <div
+        ref={localRef}
+        className="relative z-10 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+      >
+        <ul className="flex min-w-max gap-6 py-10 pr-6">
+          {eras.map((e, idx) => {
+            const above = idx % 2 === 0; // alternate up/down
+            return (
+              <li key={e.year} className="relative snap-start">
+                {/* connector from baseline to card */}
+                <div
+                  className={`
+                    absolute left-1/2 -translate-x-1/2 w-px bg-white/30 z-20
+                    ${above ? "bottom-1/2" : "top-1/2"}
+                  `}
+                  style={{ height: 40 }}
+                />
+                {/* baseline dot */}
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-white z-20" />
+
+                {/* CARD — opaque bg so baseline doesn't show through */}
+                <a
+                  href={`/era#${e.year}`}
+                  className={`
+                    relative block w-[220px] rounded-xl overflow-hidden
+                    border border-white/10 bg-[#111]             /* opaque dark */
+                    shadow-[0_4px_16px_rgba(0,0,0,0.35)]
+                    transition-transform hover:-translate-y-1 z-30
+                    ${above ? "-translate-y-10" : "translate-y-10"}
+                  `}
+                >
+                  <div className="relative aspect-[4/3]">
+                    <Image
+                      src={e.img}
+                      alt={`${e.year} · ${e.label}`}
+                      fill
+                      sizes="(min-width:1024px) 220px, 50vw"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="p-2 text-xs">
+                    <div className="text-white/60">{e.year}</div>
+                    <div className="font-semibold truncate">{e.label}</div>
+                  </div>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}

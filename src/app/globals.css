@@ -30,3 +30,5 @@ body {
 @keyframes spin-slow { to { transform: rotate(360deg); } }
 .badge-spin { animation: spin-slow 6s linear infinite; }
 
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
