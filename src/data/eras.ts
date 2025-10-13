@@ -1,17 +1,40 @@
-export type Era = {
-  id: string;      // "2015"
-  year: number;
-  title: string;
-  cover: string;   // /images/eras/2015-lionheart.jpg
-  highlights: string[];
-};
+export type Era = { year: number; month: number | string; day?: number | string; label: string; img: string };
 
 export const ERAS: Era[] = [
-  { id: "2007", year: 2007, title: "Into the New World", cover: "/images/eras/2007-itnw.jpg", highlights: ["Debut single", "First wins"] },
-  { id: "2009", year: 2009, title: "Gee", cover: "/images/eras/2009-gee.jpg", highlights: ["Nationwide craze", "Show streak"] },
-  { id: "2011", year: 2011, title: "The Boys", cover: "/images/eras/2011-theboys.jpg", highlights: ["Global release", "Sharper concept"] },
-  { id: "2013", year: 2013, title: "I Got a Boy", cover: "/images/eras/2013-igab.jpg", highlights: ["Genre mash landmark", "YouTube awards"] },
-  { id: "2015", year: 2015, title: "Lion Heart", cover: "/images/eras/2015-lionheart.jpg", highlights: ["Retro elegance", "Dual titles"] },
-  { id: "2017", year: 2017, title: "Holiday Night", cover: "/images/eras/2017-holidaynight.jpg", highlights: ["10th anniv.", "Nostalgia visuals"] },
-  { id: "2022", year: 2022, title: "Forever 1", cover: "/images/eras/2022-forever1.jpg", highlights: ["15th anniv. reunion", "Promotions"] },
+  { year: 2007, month: 8, day: 5, label: "Into the New World", img: "/images/eras/2007-itnw.jpg" },
+  { year: 2007, month: 11, day: 1, label: "Girls' Generation",   img: "/images/eras/2007-gg.jpg" },
+  { year: 2008, month: 3, day: 13, label: "Baby Baby",          img: "/images/eras/2007-bb.jpg" },
+  { year: 2009, month: 1, day: 5, label: "Gee",                 img: "/images/eras/2009-gee.jpg" },
+  { year: 2009, month: 6, day: 25, label: "Genie",               img: "/images/eras/2009-genie.jpg" },
+  { year: 2010, month: 1, day: 28, label: "Oh!",               img: "/images/eras/2010-oh.jpg" },
+  { year: 2010, month: 3, day: 22, label: "Run Devil Run",               img: "/images/eras/2010-rdr.jpg" },
+  { year: 2010, month: 9, day: 5, label: "Genie (Japanese)",               img: "/images/eras/2010-genie.jpg" },
+  { year: 2010, month: 10, day: 17, label: "Gee (Japanese)",               img: "/images/eras/2010-gee.jpg" },
+  { year: 2010, month: 10, day: 27, label: "Hoot",               img: "/images/eras/2010-hoot.jpg" },
+  { year: 2011, month: 1, day: 25, label: "Run Devil Run (Japanese)",               img: "/images/eras/2011-rdr.jpg" },
+  { year: 2011, month: 4, day: 23, label: "Mr. Taxi (Japanese)",               img: "/images/eras/2011-mrtaxi.jpg" },
+  { year: 2011, month: 6, day: 1, label: "Girls' Generation (Japanese)",               img: "/images/eras/2011-gg.jpg" },
+  { year: 2011, month: 10, day: 19, label: "The Boys",            img: "/images/eras/2011-theboys.jpg" },
+  { year: 2011, month: 12, day: 9, label: "Mr. Taxi (Repackage)",            img: "/images/eras/2011-mrtaxir.jpg" },
+  { year: 2011, month: 12, day: 18, label: "Girls’ Generation ~The Boys~ (Japanese)",            img: "/images/eras/2011-ggtb.jpg" },
+  { year: 2012, month: 6, day: 20, label: "Paparazzi (Japanese)",            img: "/images/eras/2012-paparazzi.jpg" },
+  { year: 2012, month: 9, day: 3, label: "All My Love is for You (Japanese)",            img: "/images/eras/2012-amlify.jpg" },
+  { year: 2012, month: 9, day: 14, label: "Oh! (Japanese)",            img: "/images/eras/2012-oh.jpg" },
+  { year: 2012, month: 11, day: 7, label: "Flower Power (Japanese)",            img: "/images/eras/2012-fp.jpg" },
+  { year: 2012, month: 11, day: 28, label: "Girls & Peace (Japanese)",            img: "/images/eras/2012-gp.jpg" },
+  { year: 2012, month: 12, day: 21, label: "Dancing Queen",         img: "/images/eras/2012-dq.jpg" },
+  { year: 2013, month: 1, day: 1, label: "I Got a Boy",         img: "/images/eras/2013-igab.jpg" },
+  { year: 2013, month: 6, day: 12, label: "Love & Girls (Japanese)",            img: "/images/eras/2013-lg.jpg" },
+  { year: 2013, month: 9, day: 11, label: "Galaxy Supernova (Japanese)",            img: "/images/eras/2013-gs.jpg" },
+  { year: 2013, month: 11, day: 5, label: "My Oh My (Japanese)",            img: "/images/eras/2013-mom.jpg" },
+  { year: 2013, month: 12, day: 10, label: "Love & Peace (Japanese)",            img: "/images/eras/2013-lp.jpg" },
+  { year: 2014, month: 2, day: 24, label: "Mr.Mr.",          img: "/images/eras/2014-mrmr.jpg" },
+  { year: 2014, month: 7, day: 23, label: "The Best (Japanese)",          img: "/images/eras/2014-tb.jpg" },
+  { year: 2015, month: 4, day: 22, label: "Catch Me If You Can (Japanese)",          img: "/images/eras/2015-cmiyc.jpg" },
+  { year: 2015, month: 7, day: 7, label: "Party",          img: "/images/eras/2015-party.jpg" },
+  { year: 2015, month: 8, day: 19, label: "Lion Heart",          img: "/images/eras/2015-lionheart.jpg" },
+  { year: 2016, month: 8, day: 5, label: "Sailing (0805)",          img: "/images/eras/2016-0805.jpg" },
+  { year: 2017, month: 8, day: 4, label: "Holiday Night",       img: "/images/eras/2017-holidaynight.jpg" },
+  { year: 2022, month: 8, day: 5, label: "Forever 1",          img: "/images/eras/2022-forever1.jpg" },
+  { year: 2025, month: 2, day: 14, label: "2025 SMTOWN : THE CULTURE, THE FUTURE - My Everything",          img: "/images/eras/2025-myeverything.jpg" },
 ];

@@ -1,113 +1,70 @@
 "use client";
-import React, { useEffect, useMemo, useState, useRef, Suspense, JSX } from "react";
+
+import React, { useEffect, useMemo, useState, useRef, Suspense } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import dynamic from "next/dynamic";
-import type { Group } from "three";
-import type { ThreeElements } from "@react-three/fiber";
-import { ERAS } from "@/data/eras";
-import Link from "next/link";
+import { useEgg } from "@/egg/EggContext";
+import { monthToNumber, dayToNumber, pad2, ymdKey } from "@/lib/date";
 
 
-// Lazy-load the Canvas only on the client 
-const R3FCanvas = dynamic(
-  () => import("@react-three/fiber").then((m) => m.Canvas),
-  { ssr: false }
-);
+/* =======================
+   HOMEPAGE SIDE NAV
+======================= */
+const HOME_SECTIONS = [
+  { id: "timeline",     label: "Era" },
+  { id: "members",      label: "Members" },
+  { id: "discography",  label: "Discography" },
+];
 
-import { OrbitControls, Stage, useGLTF, ContactShadows } from "@react-three/drei";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Center, Environment } from "@react-three/drei";
-
-type BadgeModelProps = ThreeElements["group"] & {
-  speed?: number;
-};
-
-function BadgeModel({ speed = 0.6, ...props }: BadgeModelProps) {
-  const { scene } = useGLTF("/models/gg-badge.glb");
-  const ref = useRef<Group>(null);
-
-  useFrame((_, dt) => {
-    if (ref.current) ref.current.rotation.y += dt * speed;
-  });
-
-  return <primitive ref={ref} object={scene} {...props} />;
+function useActiveSection() {
+  const [active, setActive] = React.useState(HOME_SECTIONS[0].id);
+  React.useEffect(() => {
+    const io = new IntersectionObserver(
+      (entries) => {
+        const topMost = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (topMost?.target) setActive(topMost.target.id);
+      },
+      { rootMargin: "-40% 0px -50% 0px", threshold: [0, 0.25, 0.5, 1] }
+    );
+    HOME_SECTIONS.forEach(({ id }) => {
+      const el = document.getElementById(id);
+      if (el) io.observe(el);
+    });
+    return () => io.disconnect();
+  }, []);
+  return active;
 }
-// Preload the model so it appears instantly when the modal opens
-useGLTF.preload("/models/gg-badge.glb");
 
-function Badge3DView() {
+function SideNav() {
+  const active = useActiveSection();
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const y = el.getBoundingClientRect().top + window.scrollY - 80; // sticky header offset
+    window.scrollTo({ top: y, behavior: "smooth" });
+  };
   return (
-    <div className="h-48 w-full rounded-xl overflow-hidden border border-white/10 bg-black">
-      <R3FCanvas camera={{ position: [0.6, 0.5, 1.6], fov: 45 }}>
-        <color attach="background" args={["#000"]} />
-        <Suspense fallback={null}>
-          <Stage intensity={1.2} environment="city" /* no contactShadow here */>
-            <BadgeModel />
-          </Stage>
-
-          {/* Ground shadow under the badge */}
-          <ContactShadows
-            opacity={0.45}
-            scale={6}
-            blur={2.5}
-            far={4}
-            resolution={512}
-            frames={1}
-          />
-        </Suspense>
-        <OrbitControls enableZoom={false} />
-      </R3FCanvas>
-    </div>
+    <aside className="fixed right-4 top-24 hidden lg:flex flex-col gap-2 z-30">
+      {HOME_SECTIONS.map((s) => (
+        <button
+          key={s.id}
+          onClick={() => scrollTo(s.id)}
+          className={`px-3 py-1.5 rounded-lg text-xs border transition
+            ${active === s.id ? "bg-white text-black border-white" : "border-white/20 text-white/80 hover:bg-white/10"}`}
+          aria-current={active === s.id ? "true" : undefined}
+        >
+          {s.label}
+        </button>
+      ))}
+    </aside>
   );
 }
 
-function MiniBadge3D({ onClick }: { onClick: () => void }) {
-  return (
-    <div
-      onClick={onClick}
-      role="button"
-      className="ml-2 inline-flex items-center justify-center rounded-full overflow-hidden bg-transparent cursor-pointer"
-      style={{ width: 36, height: 36 }}
-    >
-
-      <Canvas
-        gl={{ alpha: true, antialias: true }}
-        camera={{ position: [0, 0, 1.9], fov: 40 }}         // closer camera
-        dpr={[1, 2]}
-      >
-        {/* Brighter scene */}
-        <ambientLight intensity={1.4} />
-        <directionalLight position={[2, 3, 2]} intensity={1.6} />
-        {/* Studio-like reflections */}
-        <Environment preset="studio" />
-
-        <Suspense fallback={null}>
-          {/* Auto-fit model; add slight upscale for presence */}
-          <Center disableZ>
-            <BadgeModel speed={0.35} scale={1.15} />
-          </Center>
-        </Suspense>
-      </Canvas>
-    </div>
-  );
-}
-
-function MiniBadgePlaceholder({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label="Show nine-member badge"
-      className="ml-2 inline-flex items-center justify-center rounded-full border border-white/10 bg-white text-black"
-      style={{ width: 36, height: 36, fontWeight: 800, fontSize: 14, lineHeight: 1 }}
-    >
-      9
-    </button>
-  );
-}
-
-
+/* =======================
+   THEME + COUNTDOWN
+======================= */
 const colors = {
   pink: "#FFCCE5",
   lavender: "#C4A1FF",
@@ -115,10 +72,8 @@ const colors = {
   ivory: "#FEFDFB",
 };
 
+// 00:00 on Aug 5, 2027 KST = 2027-08-04 15:00:00Z
 const ANNIVERSARY_DATE_KST = Date.parse("2027-08-04T15:00:00Z");
-
-const FIRST_CODE = "20070805";
-const SECOND_CODE = "3458912256";
 
 function useCountdown(targetUtcMs: number) {
   const [now, setNow] = useState<number>(() => Date.now());
@@ -139,15 +94,52 @@ function useCountdown(targetUtcMs: number) {
   return diff;
 }
 
-const eras = [
-  { year: 2007, label: "Into the New World", img: "/images/eras/2007-itnw.jpg" },
-  { year: 2009, label: "Gee", img: "/images/eras/2009-gee.jpg" },
-  { year: 2011, label: "The Boys", img: "/images/eras/2011-theboys.jpg" },
-  { year: 2013, label: "I Got a Boy", img: "/images/eras/2013-igab.jpg" },
-  { year: 2015, label: "Lion Heart", img: "/images/eras/2015-lionheart.jpg" },
-  { year: 2017, label: "Holiday Night", img: "/images/eras/2017-holidaynight.jpg" },
-  { year: 2022, label: "Forever 1", img: "/images/eras/2022-forever1.jpg" },
+/* =======================
+   DATA (HOMEPAGE PREVIEW)
+======================= */
+type Era = { year: number; month: number | string; day?: number | string; label: string; img: string };
+
+
+const eras: Era[] = [
+  { year: 2007, month: 8, day: 5, label: "Into the New World", img: "/images/eras/2007-itnw.jpg" },
+  { year: 2007, month: 11, day: 1, label: "Girls' Generation",   img: "/images/eras/2007-gg.jpg" },
+  { year: 2008, month: 3, day: 13, label: "Baby Baby",          img: "/images/eras/2007-bb.jpg" },
+  { year: 2009, month: 1, day: 5, label: "Gee",                 img: "/images/eras/2009-gee.jpg" },
+  { year: 2009, month: 6, day: 25, label: "Genie",               img: "/images/eras/2009-genie.jpg" },
+  { year: 2010, month: 1, day: 28, label: "Oh!",               img: "/images/eras/2010-oh.jpg" },
+  { year: 2010, month: 3, day: 22, label: "Run Devil Run",               img: "/images/eras/2010-rdr.jpg" },
+  { year: 2010, month: 9, day: 5, label: "Genie (Japanese)",               img: "/images/eras/2010-genie.jpg" },
+  { year: 2010, month: 10, day: 17, label: "Gee (Japanese)",               img: "/images/eras/2010-gee.jpg" },
+  { year: 2010, month: 10, day: 27, label: "Hoot",               img: "/images/eras/2010-hoot.jpg" },
+  { year: 2011, month: 1, day: 25, label: "Run Devil Run (Japanese)",               img: "/images/eras/2011-rdr.jpg" },
+  { year: 2011, month: 4, day: 23, label: "Mr. Taxi (Japanese)",               img: "/images/eras/2011-mrtaxi.jpg" },
+  { year: 2011, month: 6, day: 1, label: "Girls' Generation (Japanese)",               img: "/images/eras/2011-gg.jpg" },
+  { year: 2011, month: 10, day: 19, label: "The Boys",            img: "/images/eras/2011-theboys.jpg" },
+  { year: 2011, month: 12, day: 9, label: "Mr. Taxi (Repackage)",            img: "/images/eras/2011-mrtaxir.jpg" },
+  { year: 2011, month: 12, day: 18, label: "Girls’ Generation ~The Boys~ (Japanese)",            img: "/images/eras/2011-ggtb.jpg" },
+  { year: 2012, month: 6, day: 20, label: "Paparazzi (Japanese)",            img: "/images/eras/2012-paparazzi.jpg" },
+  { year: 2012, month: 9, day: 3, label: "All My Love is for You (Japanese)",            img: "/images/eras/2012-amlify.jpg" },
+  { year: 2012, month: 9, day: 14, label: "Oh! (Japanese)",            img: "/images/eras/2012-oh.jpg" },
+  { year: 2012, month: 11, day: 7, label: "Flower Power (Japanese)",            img: "/images/eras/2012-fp.jpg" },
+  { year: 2012, month: 11, day: 28, label: "Girls & Peace (Japanese)",            img: "/images/eras/2012-gp.jpg" },
+  { year: 2012, month: 12, day: 21, label: "Dancing Queen",         img: "/images/eras/2012-dq.jpg" },
+  { year: 2013, month: 1, day: 1, label: "I Got a Boy",         img: "/images/eras/2013-igab.jpg" },
+  { year: 2013, month: 6, day: 12, label: "Love & Girls (Japanese)",            img: "/images/eras/2013-lg.jpg" },
+  { year: 2013, month: 9, day: 11, label: "Galaxy Supernova (Japanese)",            img: "/images/eras/2013-gs.jpg" },
+  { year: 2013, month: 11, day: 5, label: "My Oh My (Japanese)",            img: "/images/eras/2013-mom.jpg" },
+  { year: 2013, month: 12, day: 10, label: "Love & Peace (Japanese)",            img: "/images/eras/2013-lp.jpg" },
+  { year: 2014, month: 2, day: 24, label: "Mr.Mr.",          img: "/images/eras/2014-mrmr.jpg" },
+  { year: 2014, month: 7, day: 23, label: "The Best (Japanese)",          img: "/images/eras/2014-tb.jpg" },
+  { year: 2015, month: 4, day: 22, label: "Catch Me If You Can (Japanese)",          img: "/images/eras/2015-cmiyc.jpg" },
+  { year: 2015, month: 7, day: 7, label: "Party",          img: "/images/eras/2015-party.jpg" },
+  { year: 2015, month: 8, day: 19, label: "Lion Heart",          img: "/images/eras/2015-lionheart.jpg" },
+  { year: 2016, month: 8, day: 5, label: "Sailing (0805)",          img: "/images/eras/2016-0805.jpg" },
+  { year: 2017, month: 8, day: 4, label: "Holiday Night",       img: "/images/eras/2017-holidaynight.jpg" },
+  { year: 2022, month: 8, day: 5, label: "Forever 1",          img: "/images/eras/2022-forever1.jpg" },
+  { year: 2025, month: 2, day: 14, label: "2025 SMTOWN : THE CULTURE, THE FUTURE - My Everything",          img: "/images/eras/2025-myeverything.jpg" },
 ];
+
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 const allMembersOrdered = [
   { name: "Taeyeon", img: "/images/members/taeyeon.jpg" },
@@ -170,105 +162,44 @@ function memberForGridIndex(i: number, egg: boolean) {
   return membersNoJessica[idx];
 }
 
+/* =======================
+   PAGE
+======================= */
 export default function AnniversaryLanding() {
   const { days, hours, minutes, seconds } = useCountdown(ANNIVERSARY_DATE_KST);
-  const [egg, setEgg] = useState(false);
-  const [keypadOpen, setKeypadOpen] = useState(false);
-  const [typed, setTyped] = useState("");
-  const [clickSeq, setClickSeq] = useState("");
 
-  // Keypad state
-  const [keypadStage, setKeypadStage] = useState<1 | 2>(2);
-  const [firstSeq, setFirstSeq] = useState("");
-  const [secondSeq, setSecondSeq] = useState("");
-  const [showBadgeModal, setShowBadgeModal] = useState(false);
-  const openBadgeModal = () => setShowBadgeModal(true);
+  // Use GLOBAL egg state & keypad trigger
+  const { eggActive, openEggPad } = useEgg();
+  const egg = eggActive;
 
-  const closeBadgeModal = () => {
-    setShowBadgeModal(false);
-    try { localStorage.setItem("eggBadgeSeen", "1"); } catch { }
-  };
-
-
-  const openKeypad = (stage: 1 | 2) => {
-    setKeypadStage(stage);
-    setKeypadOpen(true);
-    setFirstSeq("");
-    setSecondSeq("");
-  };
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      // only digits matter
-      if (!/[0-9]/.test(e.key)) return;
-      const next = (typed + e.key).slice(-FIRST_CODE.length); // keep last N
-      setTyped(next);
-      if (next === FIRST_CODE) {
-        setKeypadOpen(true);
-        setClickSeq(""); // reset second-stage buffer
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [typed]);
-
+  // Center tile long-press → open global keypad (stage 2 UI is handled globally)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startLongPress = () => {
-    if (egg) return; // already unlocked
-    pressTimer.current = setTimeout(() => openKeypad(1), 700);
+    pressTimer.current = setTimeout(() => openEggPad(1), 700); // Stage 1 keypad
   };
   const endLongPress = () => {
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
+    if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; }
   };
+
+  // Optional celebration when unlock happens (from anywhere)
+  useEffect(() => {
+    function onUnlocked() {
+      (async () => {
+        const confetti = (await import("canvas-confetti")).default;
+        confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+        setTimeout(() => confetti({ particleCount: 60, spread: 100, origin: { y: 0.6 } }), 250);
+      })();
+    }
+    window.addEventListener("egg:unlocked", onUnlocked as EventListener);
+    return () => window.removeEventListener("egg:unlocked", onUnlocked as EventListener);
+  }, []);
 
   const members = egg ? allMembersOrdered : allMembersOrdered.filter((m) => m.name !== "Jessica");
 
-  useEffect(() => {
-    if (!egg) return;
-    (async () => {
-      const confetti = (await import("canvas-confetti")).default;
-
-      // burst 1
-      confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
-      // burst 2
-      setTimeout(() => confetti({ particleCount: 60, spread: 100, origin: { y: 0.6 } }), 250);
-    })();
-  }, [egg]);
-
   return (
     <div className="min-h-screen bg-[radial-gradient(1200px_600px_at_50%_-10%,rgba(196,161,255,0.25),transparent),linear-gradient(180deg,#0b0b0b,#141414)] text-white">
-      {/* NAVBAR */}
-      <header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-white/5 border-b border-white/10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-pink-300" style={{ background: colors.pink }} />
-            <span className="font-bold tracking-widest">GIRLS&#39; GENERATION</span>
-            {egg &&
-              (showBadgeModal
-                ? <MiniBadgePlaceholder onClick={openBadgeModal} />
-                : <MiniBadge3D onClick={openBadgeModal} />)}
-          </div>
-          <nav className="hidden md:flex items-center gap-6 text-sm">
-            {/* existing in-page anchors (homepage sections) */}
-            <a className="hover:text-pink-200" href="#timeline">Timeline</a>
-            <a className="hover:text-pink-200" href="#members">Members</a>
-            <a className="hover:text-pink-200" href="#discography">Discography</a>
-            <a className="hover:text-pink-200" href="#fan">Fan Space</a>
-
-            {/* small divider */}
-            <span aria-hidden className="mx-2 h-4 w-px bg-white/10" />
-
-            {/* NEW: full timeline page */}
-            <Link className="hover:text-pink-200" href="/era" prefetch>
-              Era
-            </Link>
-          </nav>
-          <a href="#fan" className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 transition text-xs">Leave a Message</a>
-        </div>
-      </header>
+      {/* Homepage side navigator */}
+      <SideNav />
 
       {/* HERO */}
       <section className="relative overflow-hidden">
@@ -324,9 +255,7 @@ export default function AnniversaryLanding() {
               <div className="absolute inset-0 grid grid-cols-3 gap-2 p-2">
                 {Array.from({ length: 9 }).map((_, i) => {
                   const isCenter = i === 4;
-
-                  // pick image for each tile (your existing logic)
-                  const data = memberForGridIndex(i, egg); // from your previous step
+                  const data = memberForGridIndex(i, egg);
                   const src = data ? data.img : "/images/logo/gg-logo.jpg";
 
                   return (
@@ -335,12 +264,12 @@ export default function AnniversaryLanding() {
                       className="relative rounded-xl overflow-hidden border border-white/10 bg-white/5"
                       {...(isCenter
                         ? {
-                          onMouseDown: startLongPress,
-                          onMouseUp: endLongPress,
-                          onMouseLeave: endLongPress,
-                          onTouchStart: startLongPress,
-                          onTouchEnd: endLongPress,
-                        }
+                            onMouseDown: startLongPress,
+                            onMouseUp: endLongPress,
+                            onMouseLeave: endLongPress,
+                            onTouchStart: startLongPress,
+                            onTouchEnd: endLongPress,
+                          }
                         : {})}
                     >
                       <Image
@@ -367,61 +296,66 @@ export default function AnniversaryLanding() {
             <h3 className="text-lg font-bold">Timeline</h3>
           </div>
 
-          {/* Mobile: vertical timeline */}
           {/* Mobile: vertical wave timeline (alternating left/right) */}
           <div className="md:hidden relative mt-6">
             {/* center vertical line */}
             <div className="pointer-events-none absolute left-1/2 top-0 bottom-0 w-px bg-white/20" />
 
             <ol className="relative space-y-10 px-4">
-              {eras.map((e, idx) => {
-                const leftSide = idx % 2 === 0; // alternate sides
-                return (
-                  <li key={e.year} className="relative">
-                    {/* baseline dot */}
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-white" />
+              {[...eras]
+                .sort((a, b) =>
+                  (a.year - b.year) ||
+                  (monthToNumber(a.month) - monthToNumber(b.month)) ||
+                  (dayToNumber(a.day ?? 1) - dayToNumber(b.day ?? 1))
+                )
+                .map((e, idx) => {
+                  const leftSide = idx % 2 === 0; // alternate sides
+                  const key = ymdKey(e.year, e.month, e.day ?? 1, e.label);
+                  const anchor = key;
+                  const mm = pad2(monthToNumber(e.month));
+                  const dd = pad2(dayToNumber(e.day ?? 1));
 
-                    {/* connector from center line to card */}
-                    <div
-                      className={`absolute top-1/2 h-px bg-white/30`}
-                      style={{
-                        // 18px connector; grows toward the card side
-                        width: 18,
-                        [leftSide ? "left" : "right"]: "50%",
-                        transform: `translate${leftSide ? "X" : "X"}(${leftSide ? "0" : "0"})`,
-                      }}
-                    />
+                  return (
+                    <li key={key} className="relative">
+                      {/* baseline dot */}
+                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-white" />
 
-                    {/* card */}
-                    <a
-                      href={`/era#${e.year}`}
-                      className={[
-                        "block rounded-xl overflow-hidden border border-white/10 bg-[#111] shadow-[0_4px_16px_rgba(0,0,0,0.35)]",
-                        "transition-transform duration-200",
-                        leftSide ? "mr-auto origin-left translate-x-2" : "ml-auto origin-right -translate-x-2",
-                      ].join(" ")}
-                      // size: shrinks on tiny screens, caps at ~320px
-                      style={{ width: "min(78vw, 320px)" }}
-                    >
-                      <div className="relative aspect-[4/3]">
-                        <Image
-                          src={e.img}
-                          alt={`${e.year} · ${e.label}`}
-                          fill
-                          sizes="100vw"
-                          className="object-cover"
-                        />
-                      </div>
-                      <div className="p-3 text-xs">
-                        <div className="text-white/60">{e.year}</div>
-                        <div className="font-semibold">{e.label}</div>
-                      </div>
-                    </a>
-                  </li>
-                );
-              })}
+                      {/* connector from center line to card */}
+                      <div
+                        className="absolute top-1/2 h-px bg-white/30"
+                        style={{ width: 18, [leftSide ? "left" : "right"]: "50%", transform: "translateX(0)" }}
+                      />
+
+                      {/* card */}
+                      <a
+                        href={`/era#${anchor}`}
+                        className={[
+                          "block rounded-xl overflow-hidden border border-white/10 bg-[#111] shadow-[0_4px_16px_rgba(0,0,0,0.35)]",
+                          "transition-transform duration-200",
+                          leftSide ? "mr-auto origin-left translate-x-2" : "ml-auto origin-right -translate-x-2",
+                        ].join(" ")}
+                        style={{ width: "min(78vw, 320px)" }}
+                      >
+                        <div className="relative aspect-[4/3]">
+                          <Image
+                            src={e.img}
+                            alt={`${e.year}.${mm}.${dd} · ${e.label}`}
+                            fill
+                            sizes="100vw"
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="p-3 text-xs">
+                          <div className="text-white/60">{e.year}.{mm}.{dd}</div>
+                          <div className="font-semibold">{e.label}</div>
+                        </div>
+                      </a>
+                    </li>
+                  );
+                })}
             </ol>
           </div>
+
 
 
           {/* Desktop: horizontal ribbon with center line + wave pattern */}
@@ -429,7 +363,7 @@ export default function AnniversaryLanding() {
         </div>
       </section>
 
-      {/* MEMBERS MOSAIC */}
+      {/* MEMBERS */}
       <section id="members" className="scroll-mt-24 py-14 border-t border-white/10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-6">
@@ -456,7 +390,7 @@ export default function AnniversaryLanding() {
         </div>
       </section>
 
-      {/* DISCOGRAPHY PREVIEW */}
+      {/* DISCOGRAPHY */}
       <section id="discography" className="scroll-mt-24 py-14 border-t border-white/10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-6">
@@ -475,22 +409,6 @@ export default function AnniversaryLanding() {
         </div>
       </section>
 
-      {/* FAN SPACE CTA */}
-      <section id="fan" className="scroll-mt-24 py-16 border-t border-white/10">
-        <div className="mx-auto max-w-3xl px-4 text-center">
-          <h2 className="text-2xl font-extrabold">Write Your 20th Anniversary Message</h2>
-          <p className="mt-2 text-sm text-white/70">Share a memory, a lyric that changed you, or a simple “소녀시대 영원히!”</p>
-          <div className="mt-6 grid sm:grid-cols-[1fr_auto] gap-3">
-            <input
-              placeholder="Type your message…"
-              className="w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-sm outline-none focus:border-pink-200/50"
-            />
-            <button className="rounded-2xl px-5 py-3 bg-white text-black text-sm font-semibold hover:opacity-90">Post</button>
-          </div>
-          <p className="mt-3 text-xs text-white/60">(Local-only prototype. Backend can be added later.)</p>
-        </div>
-      </section>
-
       {/* FOOTER */}
       <footer className="py-10 border-t border-white/10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-xs text-white/60 flex flex-col sm:flex-row gap-3 items-center justify-between">
@@ -504,54 +422,13 @@ export default function AnniversaryLanding() {
       </footer>
 
       <BackToTop />
-
-      {keypadOpen && (
-        <SecretKeypad
-          title={keypadStage === 1 ? "Enter Code (1/2)" : "Enter Code (2/2)"}
-          expected={keypadStage === 1 ? FIRST_CODE : SECOND_CODE}
-          progress={
-            keypadStage === 1 ? firstSeq.length : secondSeq.length
-          }
-          total={
-            keypadStage === 1 ? FIRST_CODE.length : SECOND_CODE.length
-          }
-          onDigit={(d) => {
-            if (keypadStage === 1) {
-              const next = (firstSeq + d).slice(0, FIRST_CODE.length);
-              if (FIRST_CODE.startsWith(next)) {
-                setFirstSeq(next);
-                if (next === FIRST_CODE) {
-                  // transition to stage 2
-                  setKeypadStage(2);
-                  setSecondSeq("");
-                }
-              } else {
-                setFirstSeq(""); // reset on wrong step
-              }
-            } else {
-              const next = (secondSeq + d).slice(0, SECOND_CODE.length);
-              if (SECOND_CODE.startsWith(next)) {
-                setSecondSeq(next);
-                if (next === SECOND_CODE) {
-                  setEgg(true);
-                  setKeypadOpen(false);
-
-                  setShowBadgeModal(true);
-                  try { localStorage.removeItem("eggBadgeSeen"); } catch { }
-                }
-              } else {
-                setSecondSeq(""); // reset on wrong step
-              }
-            }
-          }}
-          onClose={() => setKeypadOpen(false)}
-        />
-      )}
-      {showBadgeModal && <NineBadgeModal onClose={closeBadgeModal} />}
     </div>
   );
 }
 
+/* =======================
+   SMALL REUSABLES
+======================= */
 function Divider() {
   return <span className="h-5 w-px bg-white/20" />;
 }
@@ -614,118 +491,40 @@ function BackToTop() {
   );
 }
 
-function SecretKeypad({
-  title,
-  expected,
-  progress,
-  total,
-  onDigit,
-  onClose,
+/* =======================
+   DESKTOP RIBBON
+======================= */
+function HorizontalRibbon({
+  eras,
 }: {
-  title: string;
-  expected: string;
-  progress: number;
-  total: number;
-  onDigit: (d: string) => void;
-  onClose: () => void;
+  eras: { year: number; month: number | string; day?: number | string; label: string; img: string }[];
 }) {
-  const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-[min(92vw,360px)] rounded-3xl border border-white/10 bg-[#111]/95 p-4 shadow-2xl">
-        <div className="flex items-center justify-between">
-          <div className="text-sm font-semibold">{title}</div>
-          <button
-            onClick={onClose}
-            className="text-xs rounded-lg px-2 py-1 border border-white/20 hover:bg-white/10"
-          >
-            Close
-          </button>
-        </div>
-
-        <div className="mt-3 h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
-          <div
-            className="h-full bg-white transition-all"
-            style={{ width: `${(progress / total) * 100}%` }}
-          />
-        </div>
-        <div className="mt-2 text-[11px] text-white/60">
-          Tap the tiles in order
-        </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          {digits.slice(0, 9).map((d) => (
-            <button
-              key={d}
-              onClick={() => onDigit(d)}
-              className="aspect-square rounded-2xl border border-white/10 bg-white/5 text-lg font-semibold hover:bg-white/10 active:scale-95 transition"
-            >
-              {d}
-            </button>
-          ))}
-          <div />
-          <button
-            onClick={() => onDigit("0")}
-            className="aspect-square rounded-2xl border border-white/10 bg-white/5 text-lg font-semibold hover:bg-white/10 active:scale-95 transition"
-          >
-            0
-          </button>
-          <div />
-        </div>
-
-        <div className="mt-3 text-[11px] text-white/50 text-center tracking-wider">
-          {progress}/{total}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NineBadgeModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" role="dialog" aria-modal="true">
-      <div className="w-[min(92vw,480px)] rounded-3xl border border-white/10 bg-[#111]/95 p-5 shadow-2xl">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-base font-semibold">OT9 Mode Unlocked</h3>
-          <button onClick={onClose} className="text-xs rounded-lg px-2 py-1 border border-white/20 hover:bg-white/10" aria-label="Close badge">
-            Close
-          </button>
-        </div>
-
-        <div className="mt-4">
-          <Badge3DView />  {/* ⬅️ the 3D canvas */}
-          <p className="mt-4 text-sm text-white/70 text-center">
-            Nine-member tribute enabled. Tap the 9 badge in the header anytime to view again.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-function classNames(...xs: (string | false | undefined)[]) {
-  return xs.filter(Boolean).join(" ");
-}
-
-const ribbonRef = { current: null as HTMLDivElement | null }; // simple module-level ref holder
-
-function HorizontalRibbon({ eras }: { eras: { year: number; label: string; img: string }[] }) {
   const localRef = React.useRef<HTMLDivElement | null>(null);
+
+  const items = React.useMemo(
+    () =>
+      [...eras].sort(
+        (a, b) =>
+          (a.year - b.year) ||
+          (monthToNumber(a.month) - monthToNumber(b.month)) ||
+          (dayToNumber(a.day ?? 1) - dayToNumber(b.day ?? 1))
+      ),
+    [eras]
+  );
 
   return (
     <div className="hidden md:block relative mt-6">
-      {/* 1) Baseline behind everything */}
+      {/* Baseline behind everything */}
       <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-white/20 z-0" />
 
-      {/* 2) Edge fade (nice visual + hides any baseline ends) */}
+      {/* Edge fade */}
       <div className="pointer-events-none absolute inset-y-0 left-0 right-0 z-30 flex">
         <span className="w-10 bg-gradient-to-r from-[#0b0b0b] to-transparent" />
         <span className="flex-1" />
         <span className="w-10 bg-gradient-to-l from-[#0b0b0b] to-transparent" />
       </div>
 
-      {/* 3) Side arrows */}
+      {/* Side arrows */}
       <button
         onClick={() => localRef.current?.scrollBy({ left: -420, behavior: "smooth" })}
         className="absolute left-2 top-1/2 -translate-y-1/2 z-40 rounded-full border border-white/15 bg-black/40 backdrop-blur px-2 py-1 text-xs hover:bg-white/15"
@@ -741,16 +540,18 @@ function HorizontalRibbon({ eras }: { eras: { year: number; label: string; img: 
         →
       </button>
 
-      {/* 4) Scroll area */}
-      <div
-        ref={localRef}
-        className="relative z-10 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
-      >
+      {/* Scroll area */}
+      <div ref={localRef} className="relative z-10 overflow-x-auto scrollbar-hide snap-x snap-mandatory">
         <ul className="flex min-w-max gap-6 py-10 pr-6">
-          {eras.map((e, idx) => {
+          {items.map((e, idx) => {
             const above = idx % 2 === 0; // alternate up/down
+            const key = ymdKey(e.year, e.month, e.day ?? 1, e.label);
+            const anchor = key;
+            const mm = pad2(monthToNumber(e.month));
+            const dd = pad2(dayToNumber(e.day ?? 1));
+
             return (
-              <li key={e.year} className="relative snap-start">
+              <li key={key} className="relative snap-start">
                 {/* connector from baseline to card */}
                 <div
                   className={`
@@ -764,10 +565,10 @@ function HorizontalRibbon({ eras }: { eras: { year: number; label: string; img: 
 
                 {/* CARD — opaque bg so baseline doesn't show through */}
                 <a
-                  href={`/era#${e.year}`}
+                  href={`/era#${anchor}`}
                   className={`
                     relative block w-[220px] rounded-xl overflow-hidden
-                    border border-white/10 bg-[#111]             /* opaque dark */
+                    border border-white/10 bg-[#111]
                     shadow-[0_4px_16px_rgba(0,0,0,0.35)]
                     transition-transform hover:-translate-y-1 z-30
                     ${above ? "-translate-y-10" : "translate-y-10"}
@@ -776,14 +577,14 @@ function HorizontalRibbon({ eras }: { eras: { year: number; label: string; img: 
                   <div className="relative aspect-[4/3]">
                     <Image
                       src={e.img}
-                      alt={`${e.year} · ${e.label}`}
+                      alt={`${e.year}.${mm}.${dd} · ${e.label}`}
                       fill
                       sizes="(min-width:1024px) 220px, 50vw"
                       className="object-cover"
                     />
                   </div>
                   <div className="p-2 text-xs">
-                    <div className="text-white/60">{e.year}</div>
+                    <div className="text-white/60">{e.year}.{mm}.{dd}</div>
                     <div className="font-semibold truncate">{e.label}</div>
                   </div>
                 </a>
