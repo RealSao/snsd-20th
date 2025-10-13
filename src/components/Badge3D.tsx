@@ -3,7 +3,7 @@
 import React, { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useFrame } from "@react-three/fiber";
-import { Center, Environment, useGLTF } from "@react-three/drei";
+import { Center, useGLTF } from "@react-three/drei";
 import type { Group, WebGLRenderer } from "three";
 
 // Client-only Canvas (prevents hydration races)

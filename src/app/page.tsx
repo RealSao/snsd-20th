@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useRef, Suspense } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useEgg } from "@/egg/EggContext";
@@ -138,8 +138,6 @@ const eras: Era[] = [
   { year: 2022, month: 8, day: 5, label: "Forever 1",          img: "/images/eras/2022-forever1.jpg" },
   { year: 2025, month: 2, day: 14, label: "2025 SMTOWN : THE CULTURE, THE FUTURE - My Everything",          img: "/images/eras/2025-myeverything.jpg" },
 ];
-
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 const allMembersOrdered = [
   { name: "Taeyeon", img: "/images/members/taeyeon.jpg" },

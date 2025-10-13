@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { JSX, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -20,6 +20,7 @@ type TimelineEra = {
   label: string;
   img: string;
 };
+
 type DetailedEra = {
   id?: string;
   year: number;
@@ -29,6 +30,7 @@ type DetailedEra = {
   cover: string;
   highlights: string[];
 };
+
 type RawEra = TimelineEra | DetailedEra;
 
 type EraNormalized = {
@@ -41,22 +43,34 @@ type EraNormalized = {
   highlights: string[];
 };
 
-function normalize(e: RawEra): EraNormalized {
-  const title = "title" in e ? e.title : (e as TimelineEra).label;
-  const cover = "cover" in e ? e.cover : (e as TimelineEra).img;
-  const highlights = "highlights" in e ? e.highlights : [];
-  const mm = monthToNumber((e as any).month);
-  const dd = dayToNumber((e as any).day ?? 1);
-  const uid = (e as any).id ?? ymdKey((e as any).year, mm, dd, title);
-  return { uid, year: (e as any).year, mm, dd, title, cover, highlights };
+/** ── Type guards (no `any`) ─────────────────────────────────────────────── */
+function isDetailedEra(e: RawEra): e is DetailedEra {
+  return "title" in e && "cover" in e;
+}
+function isTimelineEra(e: RawEra): e is TimelineEra {
+  return "label" in e && "img" in e;
 }
 
-const MONTH_SHORT = ["", "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+/** ── Normalizer (no `any`) ──────────────────────────────────────────────── */
+function normalize(e: RawEra): EraNormalized {
+  const title = isDetailedEra(e) ? e.title : isTimelineEra(e) ? e.label : "";
+  const cover = isDetailedEra(e) ? e.cover : isTimelineEra(e) ? e.img : "";
+  const mm = monthToNumber(e.month);
+  const dd = dayToNumber(e.day ?? 1);
+  const uid = e.id ?? ymdKey(e.year, mm, dd, title);
+  const highlights = isDetailedEra(e) ? e.highlights : [];
+  return { uid, year: e.year, mm, dd, title, cover, highlights };
+}
 
-export default function EraPage() {
+/** Keep tuple typing for better type safety */
+const MONTH_SHORT = [
+  "" , "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec",
+] as const;
+
+export default function EraPage(): JSX.Element {
   // Normalize + sort once
-  const items = useMemo(() => {
-    const list = (ERAS as unknown as RawEra[]).map(normalize);
+  const items = useMemo<EraNormalized[]>(() => {
+    const list = (ERAS as ReadonlyArray<RawEra>).map(normalize);
     list.sort((a, b) => a.year - b.year || a.mm - b.mm || a.dd - b.dd);
     return list;
   }, []);
@@ -88,15 +102,19 @@ export default function EraPage() {
   }, [items]);
 
   // Active section highlighting
-  const [active, setActive] = useState(items[0]?.uid ?? "");
-  useEffect(() => { if (items[0]?.uid) setActive(items[0].uid); }, [items]);
+  const [active, setActive] = useState<string>(items[0]?.uid ?? "");
+  useEffect(() => {
+    if (items[0]?.uid) setActive(items[0].uid);
+  }, [items]);
 
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
-  const setRef = (id: string) => (el: HTMLElement | null) => { sectionRefs.current[id] = el; };
+  const setRef = (id: string) => (el: HTMLElement | null) => {
+    sectionRefs.current[id] = el;
+  };
 
   useEffect(() => {
     const io = new IntersectionObserver(
-      (entries) => {
+      (entries: IntersectionObserverEntry[]) => {
         // Only update active — do NOT auto-open anything
         const first = entries
           .filter((e) => e.isIntersecting)
@@ -274,6 +292,9 @@ export default function EraPage() {
           <section className="flex flex-col gap-14">
             {items.map((e, idx) => {
               const dateStr = `${e.year}.${pad2(e.mm)}.${pad2(e.dd)}`;
+              const safeCover = (e.cover ?? "").trim();
+              const hasCover = safeCover.length > 0;
+
               return (
                 <article key={e.uid} id={e.uid} ref={setRef(e.uid)} className="scroll-mt-24">
                   <motion.div
@@ -285,14 +306,23 @@ export default function EraPage() {
                   >
                     <div className="grid md:grid-cols-2 gap-0">
                       <div className="relative aspect-[16/10] md:aspect-[4/3]">
-                        <Image
-                          src={e.cover}
-                          alt={`${dateStr} · ${e.title}`}
-                          fill
-                          sizes="(min-width:1024px) 50vw, 100vw"
-                          className="object-cover"
-                          priority={idx === 0}
-                        />
+                        {hasCover ? (
+                          <Image
+                            src={safeCover}
+                            alt={`${dateStr} · ${e.title}`}
+                            fill
+                            sizes="(min-width:1024px) 50vw, 100vw"
+                            className="object-cover"
+                            priority={idx === 0}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 grid place-items-center bg-white/5">
+                            <div className="text-center px-4">
+                              <div className="text-sm opacity-70">No cover image</div>
+                              <div className="mt-1 text-xs opacity-50">{e.title}</div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div className="p-5 md:p-7 flex flex-col">
                         <div className="text-sm md:text-base text-white/60">{dateStr}</div>

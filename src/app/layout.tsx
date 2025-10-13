@@ -8,7 +8,6 @@ import React from "react";
 import { EggProvider, useEgg } from "@/egg/EggContext";
 import GlobalEgg from "@/components/GlobalEgg";
 import { Badge3D } from "@/components/Badge3D";
-import { motion } from "framer-motion";
 import { Badge3DView } from "@/components/Badge3DView";
 
 /* Spinning badge modal */
