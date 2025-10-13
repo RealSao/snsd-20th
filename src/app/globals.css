@@ -32,3 +32,17 @@ body {
 
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+html, body {
+  height: 100%;
+  overscroll-behavior-y: none;   /* Chrome/Edge/Firefox/Safari 16.4+ */
+  overscroll-behavior-x: none;
+}
+
+/* Just in case any container creates scroll chaining */
+:where(main, #__next, #root) {
+  overscroll-behavior: none;
+}
+
+/* Safety: avoid accidental horizontal scroll */
+body { overflow-x: hidden; }

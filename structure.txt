@@ -1,0 +1,74 @@
+.
+├── .DS_Store
+├── .gitattributes
+├── .gitignore
+├── eslint.config.mjs
+├── next-env.d.ts
+├── next.config.ts
+├── package-lock.json
+├── package.json
+├── postcss.config.mjs
+├── public
+│   ├── .DS_Store
+│   ├── file.svg
+│   ├── globe.svg
+│   ├── images
+│   │   ├── .DS_Store
+│   │   ├── eras
+│   │   │   ├── 2007-itnw.jpg
+│   │   │   ├── 2009-gee.jpg
+│   │   │   ├── 2011-theboys.jpg
+│   │   │   ├── 2013-igab.jpg
+│   │   │   ├── 2015-lionheart.jpg
+│   │   │   ├── 2017-holidaynight.jpg
+│   │   │   └── 2022-forever1.jpg
+│   │   ├── logo
+│   │   │   └── gg-logo.jpg
+│   │   └── members
+│   │       ├── .DS_Store
+│   │       ├── hyoyeon.jpg
+│   │       ├── jessica.jpg
+│   │       ├── seohyun.jpg
+│   │       ├── sooyoung.jpg
+│   │       ├── sunny.jpg
+│   │       ├── taeyeon.jpg
+│   │       ├── tiffany.jpg
+│   │       ├── yoona.jpg
+│   │       └── yuri.jpg
+│   ├── models
+│   │   ├── .DS_Store
+│   │   └── gg-badge.glb
+│   ├── next.svg
+│   ├── vercel.svg
+│   └── window.svg
+├── README.md
+├── SNSD-20th
+│   └── .gitattributes
+├── src
+│   ├── .DS_Store
+│   ├── app
+│   │   ├── discography
+│   │   │   └── page.tsx
+│   │   ├── era
+│   │   │   └── page.tsx
+│   │   ├── fan-space
+│   │   │   └── page.tsx
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   ├── members
+│   │   │   └── page.tsx
+│   │   └── page.tsx
+│   ├── components
+│   │   ├── Badge3D.tsx
+│   │   ├── Badge3DView.tsx
+│   │   └── GlobalEgg.tsx
+│   ├── data
+│   │   └── eras.ts
+│   └── egg
+│       └── EggContext.tsx
+├── structure.txt
+├── tailwind.config.ts
+└── tsconfig.json
+
+17 directories, 55 files
