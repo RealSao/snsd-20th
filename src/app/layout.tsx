@@ -36,16 +36,11 @@ function NineBadgeModal({ onClose }: { onClose: () => void }) {
 function Header() {
   const pathname = usePathname();
   const is = (p: string) => pathname.startsWith(p);
+  const isHome = pathname === "/"; // ← add this
 
   const colors = { pink: "#FFCCE5" };
 
-  const {
-    eggUnlocked,
-    showEggPad,
-    openEggPad,
-    closeEggPad,
-    exitEgg,
-  } = useEgg();
+  const { eggUnlocked, showEggPad, openEggPad, closeEggPad, exitEgg } = useEgg();
 
   const [showBadgeModal, setShowBadgeModal] = React.useState(false);
   const openBadgeModal = () => setShowBadgeModal(true);
@@ -72,9 +67,33 @@ function Header() {
     }
   };
 
+  /** ── Mobile menu state ───────────────────────────────────────────── */
+  const [menuOpen, setMenuOpen] = React.useState(false);
+
+  // Close menu on route change
+  React.useEffect(() => setMenuOpen(false), [pathname]);
+
+  // Prevent horizontal & body scroll when menu is open (mobile)
+  React.useEffect(() => {
+    const root = document.documentElement;
+    const prevOverflow = root.style.overflow;
+    const prevOverflowX = root.style.overflowX;
+    if (menuOpen) {
+      root.style.overflow = "hidden";
+      root.style.overflowX = "hidden";
+    } else {
+      root.style.overflow = prevOverflow || "";
+      root.style.overflowX = prevOverflowX || "";
+    }
+    return () => {
+      root.style.overflow = prevOverflow || "";
+      root.style.overflowX = prevOverflowX || "";
+    };
+  }, [menuOpen]);
+
   return (
     <>
-      <header className="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-white/5 border-b border-white/10">
+      <header className="fixed md:sticky top-0 z-50 w-full border-b border-white/10 bg-black/40 backdrop-blur supports-[backdrop-filter]:bg-white/5">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* left: brand */}
           <div className="flex items-center gap-3">
@@ -85,16 +104,34 @@ function Header() {
             {eggUnlocked && !showBadgeModal && <Badge3D onClick={openBadgeModal} />}
           </div>
 
-          {/* center: nav */}
+          {/* center: nav (desktop) */}
           <nav className="hidden md:flex items-center gap-6 text-sm">
+            <Link className={isHome ? "text-pink-200" : "hover:text-pink-200"} href="/">Homepage</Link>
             <Link className={is("/era") ? "text-pink-200" : "hover:text-pink-200"} href="/era">Era</Link>
             <Link className={is("/members") ? "text-pink-200" : "hover:text-pink-200"} href="/members">Members</Link>
             <Link className={is("/discography") ? "text-pink-200" : "hover:text-pink-200"} href="/discography">Discography</Link>
             <Link className={is("/fan-space") ? "text-pink-200" : "hover:text-pink-200"} href="/fan-space">Fan Space</Link>
           </nav>
 
-          {/* right: CTA + exit control */}
+          {/* right: CTA + exit control + mobile hamburger */}
           <div className="flex items-center gap-2">
+            {/* mobile: hamburger */}
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-nav"
+              className="md:hidden inline-flex items-center gap-2 rounded-xl border border-white/15 px-2.5 py-1.5 text-xs hover:bg-white/10"
+            >
+              {/* icon */}
+              <svg viewBox="0 0 24 24" aria-hidden className="h-5 w-5">
+                {menuOpen ? (
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                ) : (
+                  <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                )}
+              </svg>
+              <span>{menuOpen ? "Close" : "Menu"}</span>
+            </button>
 
             {showEggPad && (
               <button
@@ -117,10 +154,94 @@ function Header() {
             )}
           </div>
         </div>
+
+        {/* mobile foldout */}
+        <div
+          id="mobile-nav"
+          className={[
+            "md:hidden overflow-hidden border-t border-white/10",
+            menuOpen ? "max-h-[calc(100vh-4rem)]" : "max-h-0",
+            "transition-[max-height] duration-200 ease-out",
+            "bg-[#0b0b0b]/95 backdrop-blur",
+          ].join(" ")}
+        >
+          <nav className="px-4 sm:px-6 lg:px-8 py-3">
+            <ul className="flex flex-col">
+              <li>
+                <Link
+                  href="/"
+                  className="block w-full rounded-lg px-3 py-2 text-sm border border-transparent hover:border-white/15"
+                  onClick={() => setMenuOpen(false)}
+                  aria-current={isHome ? "page" : undefined}
+                >
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/era"
+                  className="block w-full rounded-lg px-3 py-2 text-sm border border-transparent hover:border-white/15"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Era
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/members"
+                  className="block w-full rounded-lg px-3 py-2 text-sm border border-transparent hover:border-white/15"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Members
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/discography"
+                  className="block w-full rounded-lg px-3 py-2 text-sm border border-transparent hover:border-white/15"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Discography
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/fan-space"
+                  className="block w-full rounded-lg px-3 py-2 text-sm border border-transparent hover:border-white/15"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Fan Space
+                </Link>
+              </li>
+            </ul>
+
+            {/* mobile-only controls for egg features */}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {showEggPad && (
+                <button
+                  onClick={() => { closeEggPad(); setMenuOpen(false); }}
+                  className="px-3 py-2 rounded-lg border border-white/20 hover:bg-white/10 text-xs"
+                >
+                  Close Keypad
+                </button>
+              )}
+              {eggUnlocked && (
+                <button
+                  onClick={() => { exitEgg(); setShowBadgeModal(false); setMenuOpen(false); }}
+                  className="px-3 py-2 rounded-lg border border-white/20 hover:bg-white/10 text-xs"
+                >
+                  Exit Egg Mode
+                </button>
+              )}
+            </div>
+          </nav>
+        </div>
       </header>
 
       {showBadgeModal && <NineBadgeModal onClose={closeBadgeModal} />}
       <GlobalEgg onUnlock={openBadgeModal} />
+
+      {/* ✅ keep BackToTop */}
       <BackToTop />
     </>
   );
@@ -159,11 +280,13 @@ function BackToTop() {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full overscroll-y-none">
-      <body className="antialiased bg-[#0b0b0b] text-white h-full min-h-screen overflow-x-hidden overscroll-y-none">
+    <html lang="en">
+      <body className="overflow-x-hidden">
         <EggProvider>
           <Header />
-          {children}
+          <main className="pt-16 md:pt-0 max-w-full overflow-x-clip">
+            {children}
+          </main>
         </EggProvider>
       </body>
     </html>

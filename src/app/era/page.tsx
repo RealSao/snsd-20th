@@ -268,9 +268,6 @@ export default function EraPage(): JSX.Element {
       <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-black/40 bg-black/60 border-b border-white/10">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
           <div className="text-sm tracking-widest">GIRLS&#39; GENERATION · ERA TIMELINE</div>
-          <Link href="/" className="text-xs opacity-80 hover:opacity-100 underline underline-offset-4">
-            Home
-          </Link>
         </div>
       </header>
 
