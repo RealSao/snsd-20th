@@ -423,7 +423,7 @@ export default function AnniversaryLanding() {
                 whileHover={{ y: -4 }}
                 className="rounded-2xl border border-white/10 bg-white/5 p-4"
               >
-                <Link href={`/discography#${album.slug}`} className="block">
+                <Link href={`/discography#${album.id}`} className="block">
                   <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl border border-white/10">
                     <Image
                       src={album.cover}

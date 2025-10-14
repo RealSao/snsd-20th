@@ -6,6 +6,93 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ERAS } from "@/data/eras";
 import { monthToNumber, dayToNumber, pad2, ymdKey } from "@/lib/date";
+import { DISCOGRAPHY, DiscographyItem } from "@/data/discography";
+
+// zero-pad
+const p2 = (n: number) => String(n).padStart(2, "0");
+
+// Build date indexes once
+const INDEX_YM = new Map<string, DiscographyItem[]>();     // "YYYY-MM" -> [items]
+const INDEX_YMD = new Map<string, DiscographyItem[]>();    // "YYYY-MM-DD" -> [items]
+for (const d of DISCOGRAPHY) {
+  const ym = `${d.date.year}-${p2(d.date.month)}`;
+  const ymd = `${d.date.year}-${p2(d.date.month)}-${p2(d.date.day ?? 1)}`;
+  (INDEX_YM.get(ym) ?? INDEX_YM.set(ym, []).get(ym)!).push(d);
+  (INDEX_YMD.get(ymd) ?? INDEX_YMD.set(ymd, []).get(ymd)!).push(d);
+}
+
+// month name/abbr → number
+const MONTHS: Record<string, number> = {
+  jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4, may: 5,
+  jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9, september: 9,
+  oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12,
+};
+const toInt = (v: any) => (v == null ? undefined : Number.isFinite(+v) ? +v : undefined);
+function normMonth(m: any): number | undefined {
+  if (typeof m === "number") return m;
+  const s = String(m ?? "").trim().toLowerCase();
+  if (!s) return undefined;
+  if (/^\d+$/.test(s)) {
+    const n = parseInt(s, 10);
+    return n >= 1 && n <= 12 ? n : undefined;
+  }
+  return MONTHS[s];
+}
+
+// Extract date from an era object (supports raw + normalized shapes)
+function getEraDate(era: any): { year?: number; month?: number; day?: number } {
+  const year = toInt(era.year ?? era.date?.year);
+  // 👇 also look at normalized fields: mm, dd
+  const month = normMonth(era.month ?? era.mm ?? era.date?.month);
+  const day = toInt(era.day ?? era.dd ?? era.date?.day);
+  return { year, month, day };
+}
+
+/**
+ * STRICT date-based album match (no cross-month/year fallback)
+ * - Try exact YYYY-MM-DD if day present
+ * - Else exact YYYY-MM (tie-break by exact title among those; else earliest day)
+ * - If no date match at all, try anchor; else return undefined
+ */
+function findAlbumForEra(era: any): DiscographyItem | undefined {
+  const { year, month, day } = getEraDate(era);
+  if (!year || !month) return undefined;
+
+  // 1) Exact Y-M-D if day provided
+  if (day) {
+    const ymd = `${year}-${p2(month)}-${p2(day)}`;
+    const exactDay = INDEX_YMD.get(ymd);
+    if (exactDay?.length) {
+      const t = (era.title ?? era.label ?? "").toLowerCase().trim();
+      if (t) {
+        const exactTitle = exactDay.find(d => d.title.toLowerCase().trim() === t);
+        if (exactTitle) return exactTitle;
+      }
+      return exactDay[0];
+    }
+  }
+
+  // 2) Exact Y-M
+  const ym = `${year}-${p2(month)}`;
+  const monthMatches = INDEX_YM.get(ym);
+  if (monthMatches?.length) {
+    const t = (era.title ?? era.label ?? "").toLowerCase().trim();
+    if (t) {
+      const exactTitle = monthMatches.find(d => d.title.toLowerCase().trim() === t);
+      if (exactTitle) return exactTitle;
+    }
+    return [...monthMatches].sort((a, b) => (a.date.day ?? 31) - (b.date.day ?? 31))[0];
+  }
+
+  // 3) Anchor fallback (only if no date match)
+  const anchor = era.uid ?? era.eraAnchor ?? era.id;
+  if (anchor) {
+    const byAnchor = DISCOGRAPHY.find(d => d.eraAnchor === anchor);
+    if (byAnchor) return byAnchor;
+  }
+
+  return undefined;
+}
 
 function cx(...xs: (string | false | undefined)[]) {
   return xs.filter(Boolean).join(" ");
@@ -64,7 +151,7 @@ function normalize(e: RawEra): EraNormalized {
 
 /** Keep tuple typing for better type safety */
 const MONTH_SHORT = [
-  "" , "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec",
+  "", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ] as const;
 
 export default function EraPage(): JSX.Element {
@@ -231,8 +318,8 @@ export default function EraPage(): JSX.Element {
                                   isActive
                                     ? "bg-white text-black font-semibold"
                                     : monthIsActive
-                                    ? "bg-white/10 text-white"
-                                    : "text-white/70 hover:bg-white/10"
+                                      ? "bg-white/10 text-white"
+                                      : "text-white/70 hover:bg-white/10"
                                 )}
                               >
                                 {MONTH_SHORT[mm]}
@@ -338,12 +425,18 @@ export default function EraPage(): JSX.Element {
                           </ul>
                         )}
                         <div className="mt-auto pt-5 flex gap-3">
-                          <Link
-                            href="/discography"
-                            className="px-3 py-2 text-xs rounded-lg bg-white text-black font-semibold"
-                          >
-                            Discography
-                          </Link>
+                          {(() => {
+                            const album = findAlbumForEra(e); // 'e' is the era item in your map
+                            const href = album ? `/discography#${album.id}` : `/discography`;
+                            return (
+                              <Link
+                                href={href}
+                                className="px-3 py-2 text-xs rounded-lg bg-white text-black font-semibold"
+                              >
+                                Discography
+                              </Link>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>

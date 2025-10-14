@@ -602,7 +602,7 @@ export default function DiscographyPage() {
                   key={album.id}
                   album={album}
                   onlyTitleTracks={onlyTitleTracks}
-                  defaultOpen={hash === album.slug}
+                  defaultOpen={hash === album.id}
                 />
               ))}
             </ul>
@@ -628,9 +628,9 @@ function AlbumCard({
 
   React.useEffect(() => {
     if (defaultOpen) {
-      document.getElementById(album.slug)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.getElementById(album.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  }, [defaultOpen, album.slug]);
+  }, [defaultOpen, album.id]);
 
   // Count originals + added for the pill label
   const trackCount = React.useMemo(() => {
@@ -652,7 +652,7 @@ function AlbumCard({
     !!album.eraAnchor || !!album.links?.spotify || !!album.links?.apple || !!album.links?.youtube;
 
   return (
-    <li id={album.slug} className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+    <li id={album.id} className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
       <div className="relative aspect-[16/10]">
         <Image
           src={album.cover}
