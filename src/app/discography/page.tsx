@@ -441,6 +441,29 @@ function TrackDrawer({
 
 
 /* ───────────── Smarter, scoped search (no false “igab”) ───────────── */
+// Combine tracks for search (originals + added + base album for repackages)
+function getCombinedTrackTitles(a: DiscographyItem): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const push = (arr?: Track[]) =>
+    arr?.forEach((t) => {
+      const k = t.title.toLowerCase().trim();
+      if (!seen.has(k)) { seen.add(k); out.push(t.title); }
+    });
+
+  push(a.tracks);
+  push(a.repackage?.addedTracks);
+
+  if (a.type === "Repackage" && a.repackage?.baseTitle && (!a.tracks || a.tracks.length === 0)) {
+    const base = DISCOGRAPHY.find(
+      d => d.title.toLowerCase() === a.repackage!.baseTitle.toLowerCase()
+    );
+    push(base?.tracks);
+  }
+  return out;
+}
+
+
 function normalize(s: string) {
   return s
     .toLowerCase()
@@ -454,44 +477,89 @@ function compact(s: string) {
   // remove spaces and punctuation for alias matches (e.g., "mr.mr." -> "mrmr")
   return s.replace(/[^a-z0-9가-힣]/g, "");
 }
+
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const wordHit = (field: string, tok: string) =>
+  new RegExp(`\\b${escapeRegex(tok)}\\b`, "i").test(field);
+
 function buildIndex(a: DiscographyItem) {
   const titleNorm = normalize(a.title);
   const titleComp = compact(titleNorm);
+
   const kwNorm = (a.keywords ?? []).map(normalize);
-  const kwComp = (a.keywords ?? []).map((k) => compact(normalize(k)));
-  // optional: include tracks for title/track search, not used for alias matching
-  const tracksNorm = a.tracks.map((t) => normalize(t.title)).join(" ");
-  return { titleNorm, titleComp, kwNorm, kwComp, tracksNorm, year: String(a.date.year) };
+  const kwComp = (a.keywords ?? []).map(k => compact(normalize(k)));
+
+  const tracksNorm = getCombinedTrackTitles(a).map(normalize).join(" ");
+  const tracksComp = compact(tracksNorm);
+
+  return { titleNorm, titleComp, kwNorm, kwComp, tracksNorm, tracksComp };
 }
-function matchesQuery(a: DiscographyItem, q: string) {
-  const nq = normalize(q);
-  if (!nq) return true;
 
-  const { titleNorm, titleComp, kwNorm, kwComp, tracksNorm, year } = buildIndex(a);
+// Relevance score: title + keywords + tracks all contribute
+function scoreAlbum(a: DiscographyItem, q: string): number {
+  const nq = normalize(q).trim();
+  if (!nq) return 0;
 
-  // split tokens; ALL tokens must match somewhere
+  const { titleNorm, titleComp, kwNorm, kwComp, tracksNorm, tracksComp } = buildIndex(a);
   const tokens = nq.split(/\s+/).filter(Boolean);
+  const cqWhole = compact(nq);
 
-  return tokens.every((tok) => {
+  // --- If query has 2+ words, require exact phrase in title/keywords/tracks ---
+  if (tokens.length >= 2) {
+    const phraseRe = new RegExp(`\\b${tokens.map(escapeRegex).join("\\s+")}\\b`, "i");
+    const phraseHit =
+      phraseRe.test(titleNorm) ||
+      kwNorm.some(k => phraseRe.test(k)) ||
+      phraseRe.test(tracksNorm) ||
+      // compact fallbacks (handles punctuation/spacing like "mr. mr." vs "mrmr")
+      (cqWhole.length >= 3 &&
+        (titleComp.includes(cqWhole) ||
+          kwComp.some(k => k.includes(cqWhole)) ||
+          tracksComp.includes(cqWhole)));
+
+    if (!phraseHit) return 0; // gate: do not return irrelevant albums
+  }
+
+  // --- One-word (or gated multi-word) relevance scoring for ordering ---
+  let score = 0;
+
+  if (cqWhole.length >= 3) {
+    if (titleComp === cqWhole) score += 140;         // exact compact title
+    if (titleComp.includes(cqWhole)) score += 100;   // phrase inside title
+    if (kwComp.some(k => k.includes(cqWhole))) score += 60;
+    if (tracksComp.includes(cqWhole)) score += 80;   // phrase inside tracks
+  }
+
+  for (const tok of tokens) {
+    const isShort = tok.length <= 2 && !/[가-힣]/.test(tok);
     const ctok = compact(tok);
-    const isShort = tok.length <= 2;
+    const boundary = new RegExp(`\\b${escapeRegex(tok)}\\b`, "i");
 
-    // For very short tokens ("mr") require word-boundary match on title or keywords
-    const boundary = new RegExp(`\\b${tok.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+    if (!isShort) {
+      if (boundary.test(titleNorm)) score += 25;
+      if (kwNorm.some(k => boundary.test(k))) score += 15;
+      if (boundary.test(tracksNorm)) score += 20;
 
-    const wordHit =
-      boundary.test(titleNorm) || kwNorm.some((k) => boundary.test(k));
+      if (titleComp.includes(ctok)) score += 20;
+      if (kwComp.some(k => k.includes(ctok))) score += 10;
+      if (tracksComp.includes(ctok)) score += 15;
+    } else {
+      // small words still help a bit for 1-word queries
+      if (boundary.test(titleNorm)) score += 6;
+      if (boundary.test(tracksNorm)) score += 6;
+    }
+  }
 
-    const aliasHit =
-      titleComp.includes(ctok) || kwComp.some((k) => k.includes(ctok));
-
-    const textHit =
-      (!isShort && (titleNorm.includes(tok) || tracksNorm.includes(tok))) ||
-      year.includes(tok);
-
-    return (isShort ? wordHit : false) || aliasHit || textHit;
-  });
+  return score;
 }
+
+
+// Keep this name so the rest of the file doesn't change.
+// Now it's just "score > 0?"
+function matchesQuery(a: DiscographyItem, q: string) {
+  return scoreAlbum(a, q) > 0;
+}
+
 
 /* ───────────────────── Page ───────────────────── */
 export default function DiscographyPage() {
@@ -509,16 +577,35 @@ export default function DiscographyPage() {
   }, []);
 
   const items = React.useMemo(() => {
-    return DISCOGRAPHY.filter((it) => {
-      const typeOk = !selectedType || it.type === selectedType;
-      const searchOk = matchesQuery(it, q);
-      return typeOk && searchOk;
-    }).sort((a, b) => {
-      if (a.date.year !== b.date.year) return b.date.year - a.date.year;
-      if (a.date.month !== b.date.month) return b.date.month - a.date.month;
-      return (b.date.day ?? 1) - (a.date.day ?? 1);
-    });
+    // 1) apply type filter first
+    const pool = DISCOGRAPHY.filter((it) => !selectedType || it.type === selectedType);
+
+    const query = q.trim();
+    if (!query) {
+      // no search → sort by date (desc)
+      return pool.slice().sort((a, b) => {
+        if (a.date.year !== b.date.year) return b.date.year - a.date.year;
+        if (a.date.month !== b.date.month) return b.date.month - a.date.month;
+        return (b.date.day ?? 1) - (a.date.day ?? 1);
+      });
+    }
+
+    // 2) use matchesQuery() to gate results
+    const filtered = pool.filter((a) => matchesQuery(a, query));
+
+    // 3) rank the kept items by score, then date (desc)
+    return filtered
+      .map((a) => ({ a, s: scoreAlbum(a, query) }))
+      .sort((x, y) =>
+        y.s - x.s ||
+        (y.a.date.year - x.a.date.year) ||
+        (y.a.date.month - x.a.date.month) ||
+        ((y.a.date.day ?? 1) - (x.a.date.day ?? 1))
+      )
+      .map(({ a }) => a);
   }, [q, selectedType]);
+
+
 
   const byYear = React.useMemo(() => {
     const m = new Map<number, DiscographyItem[]>();
