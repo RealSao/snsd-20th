@@ -466,7 +466,6 @@ function buildIndex(a: DiscographyItem) {
 function matchesQuery(a: DiscographyItem, q: string) {
   const nq = normalize(q);
   if (!nq) return true;
-  const cq = compact(nq);
 
   const { titleNorm, titleComp, kwNorm, kwComp, tracksNorm, year } = buildIndex(a);
 

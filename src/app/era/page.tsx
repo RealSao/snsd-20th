@@ -8,29 +8,42 @@ import { ERAS } from "@/data/eras";
 import { monthToNumber, dayToNumber, pad2, ymdKey } from "@/lib/date";
 import { DISCOGRAPHY, DiscographyItem } from "@/data/discography";
 
-// zero-pad
+/** ——— Types ——— */
+type EraDate = { year?: number; month?: number | string; day?: number };
+type EraLike = {
+  title?: string;
+  label?: string;
+  uid?: string;
+  id?: string;
+  eraAnchor?: string;
+  year?: number;
+  month?: number | string;
+  day?: number;
+  date?: EraDate;
+  /** normalized fields if your era mapper added them */
+  mm?: number;
+  dd?: number;
+};
+
+/** ——— Utils ——— */
 const p2 = (n: number) => String(n).padStart(2, "0");
 
-// Build date indexes once
-const INDEX_YM = new Map<string, DiscographyItem[]>();     // "YYYY-MM" -> [items]
-const INDEX_YMD = new Map<string, DiscographyItem[]>();    // "YYYY-MM-DD" -> [items]
-for (const d of DISCOGRAPHY) {
-  const ym = `${d.date.year}-${p2(d.date.month)}`;
-  const ymd = `${d.date.year}-${p2(d.date.month)}-${p2(d.date.day ?? 1)}`;
-  (INDEX_YM.get(ym) ?? INDEX_YM.set(ym, []).get(ym)!).push(d);
-  (INDEX_YMD.get(ymd) ?? INDEX_YMD.set(ymd, []).get(ymd)!).push(d);
+const MONTHS: Record<string, number> = {
+  jan:1,january:1,feb:2,february:2,mar:3,march:3,apr:4,april:4,may:5,
+  jun:6,june:6,jul:7,july:7,aug:8,august:8,sep:9,sept:9,september:9,
+  oct:10,october:10,nov:11,november:11,dec:12,december:12,
+};
+
+function toInt(v: unknown): number | undefined {
+  if (v === null || v === undefined) return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
 }
 
-// month name/abbr → number
-const MONTHS: Record<string, number> = {
-  jan: 1, january: 1, feb: 2, february: 2, mar: 3, march: 3, apr: 4, april: 4, may: 5,
-  jun: 6, june: 6, jul: 7, july: 7, aug: 8, august: 8, sep: 9, sept: 9, september: 9,
-  oct: 10, october: 10, nov: 11, november: 11, dec: 12, december: 12,
-};
-const toInt = (v: any) => (v == null ? undefined : Number.isFinite(+v) ? +v : undefined);
-function normMonth(m: any): number | undefined {
-  if (typeof m === "number") return m;
-  const s = String(m ?? "").trim().toLowerCase();
+function normMonth(m: number | string | undefined): number | undefined {
+  if (typeof m === "number") return m >= 1 && m <= 12 ? m : undefined;
+  if (!m) return undefined;
+  const s = String(m).trim().toLowerCase();
   if (!s) return undefined;
   if (/^\d+$/.test(s)) {
     const n = parseInt(s, 10);
@@ -39,60 +52,68 @@ function normMonth(m: any): number | undefined {
   return MONTHS[s];
 }
 
-// Extract date from an era object (supports raw + normalized shapes)
-function getEraDate(era: any): { year?: number; month?: number; day?: number } {
+/** Accepts raw or normalized era objects */
+function getEraDate(era: EraLike): { year?: number; month?: number; day?: number } {
   const year = toInt(era.year ?? era.date?.year);
-  // 👇 also look at normalized fields: mm, dd
-  const month = normMonth(era.month ?? era.mm ?? era.date?.month);
+  // Read normalized fields too (mm/dd)
+  const month = normMonth(
+    (era.month as number | string | undefined) ??
+    (era.mm as number | undefined) ??
+    (era.date?.month as number | string | undefined)
+  );
   const day = toInt(era.day ?? era.dd ?? era.date?.day);
   return { year, month, day };
 }
 
+/** Build lookups once (module scope) */
+const INDEX_YM = new Map<string, DiscographyItem[]>();   // YYYY-MM -> items
+const INDEX_YMD = new Map<string, DiscographyItem[]>();  // YYYY-MM-DD -> items
+for (const d of DISCOGRAPHY) {
+  const ym = `${d.date.year}-${p2(d.date.month)}`;
+  const ymd = `${d.date.year}-${p2(d.date.month)}-${p2(d.date.day ?? 1)}`;
+  (INDEX_YM.get(ym) ?? INDEX_YM.set(ym, []).get(ym)!).push(d);
+  (INDEX_YMD.get(ymd) ?? INDEX_YMD.set(ymd, []).get(ymd)!).push(d);
+}
+
 /**
  * STRICT date-based album match (no cross-month/year fallback)
- * - Try exact YYYY-MM-DD if day present
- * - Else exact YYYY-MM (tie-break by exact title among those; else earliest day)
- * - If no date match at all, try anchor; else return undefined
+ * 1) Try exact YYYY-MM-DD (if day present)
+ * 2) Else exact YYYY-MM (tie-break by exact title then earliest day)
+ * 3) Else try anchor, else undefined
  */
-function findAlbumForEra(era: any): DiscographyItem | undefined {
+function findAlbumForEra(era: EraLike): DiscographyItem | undefined {
   const { year, month, day } = getEraDate(era);
   if (!year || !month) return undefined;
 
-  // 1) Exact Y-M-D if day provided
+  const title = (era.title ?? era.label ?? "").toLowerCase().trim();
+
   if (day) {
     const ymd = `${year}-${p2(month)}-${p2(day)}`;
-    const exactDay = INDEX_YMD.get(ymd);
-    if (exactDay?.length) {
-      const t = (era.title ?? era.label ?? "").toLowerCase().trim();
-      if (t) {
-        const exactTitle = exactDay.find(d => d.title.toLowerCase().trim() === t);
-        if (exactTitle) return exactTitle;
-      }
-      return exactDay[0];
+    const sameDay = INDEX_YMD.get(ymd);
+    if (sameDay?.length) {
+      const exact = title
+        ? sameDay.find(d => d.title.toLowerCase().trim() === title)
+        : undefined;
+      return exact ?? sameDay[0];
     }
   }
 
-  // 2) Exact Y-M
   const ym = `${year}-${p2(month)}`;
-  const monthMatches = INDEX_YM.get(ym);
-  if (monthMatches?.length) {
-    const t = (era.title ?? era.label ?? "").toLowerCase().trim();
-    if (t) {
-      const exactTitle = monthMatches.find(d => d.title.toLowerCase().trim() === t);
-      if (exactTitle) return exactTitle;
-    }
-    return [...monthMatches].sort((a, b) => (a.date.day ?? 31) - (b.date.day ?? 31))[0];
+  const sameMonth = INDEX_YM.get(ym);
+  if (sameMonth?.length) {
+    const exact = title
+      ? sameMonth.find(d => d.title.toLowerCase().trim() === title)
+      : undefined;
+    if (exact) return exact;
+    return [...sameMonth].sort((a, b) => (a.date.day ?? 31) - (b.date.day ?? 31))[0];
   }
 
-  // 3) Anchor fallback (only if no date match)
   const anchor = era.uid ?? era.eraAnchor ?? era.id;
-  if (anchor) {
-    const byAnchor = DISCOGRAPHY.find(d => d.eraAnchor === anchor);
-    if (byAnchor) return byAnchor;
-  }
+  if (anchor) return DISCOGRAPHY.find(d => d.eraAnchor === anchor);
 
   return undefined;
 }
+
 
 function cx(...xs: (string | false | undefined)[]) {
   return xs.filter(Boolean).join(" ");
