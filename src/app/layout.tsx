@@ -121,7 +121,39 @@ function Header() {
 
       {showBadgeModal && <NineBadgeModal onClose={closeBadgeModal} />}
       <GlobalEgg onUnlock={openBadgeModal} />
+      <BackToTop />
     </>
+  );
+}
+
+function BackToTop() {
+  const [mounted, setMounted] = React.useState(false);
+  const [visible, setVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+    const onScroll = () => setVisible(window.scrollY > 300);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  if (!mounted) return null; // hydration-safe
+
+  return (
+    <button
+      aria-label="Back to top"
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      className={[
+        "fixed bottom-6 right-6 z-50 rounded-2xl px-3 py-2",
+        "bg-white text-black text-sm font-semibold shadow-2xl border border-white/20",
+        "hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-pink-200/60",
+        "transition-all duration-300",
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3 pointer-events-none",
+      ].join(" ")}
+    >
+      ↑ Top
+    </button>
   );
 }
 

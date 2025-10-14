@@ -339,7 +339,7 @@ export default function EraPage(): JSX.Element {
                         )}
                         <div className="mt-auto pt-5 flex gap-3">
                           <Link
-                            href="/#discography"
+                            href="/discography"
                             className="px-3 py-2 text-xs rounded-lg bg-white text-black font-semibold"
                           >
                             Discography

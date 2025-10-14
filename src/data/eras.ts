@@ -3,7 +3,7 @@ export type Era = { year: number; month: number | string; day?: number | string;
 export const ERAS: Era[] = [
   { year: 2007, month: 8, day: 5, label: "Into the New World", img: "/images/eras/2007-itnw.jpg" },
   { year: 2007, month: 11, day: 1, label: "Girls' Generation",   img: "/images/eras/2007-gg.jpg" },
-  { year: 2008, month: 3, day: 13, label: "Baby Baby",          img: "/images/eras/2007-bb.jpg" },
+  { year: 2008, month: 3, day: 13, label: "Baby Baby",          img: "/images/eras/2008-bb.jpg" },
   { year: 2009, month: 1, day: 5, label: "Gee",                 img: "/images/eras/2009-gee.jpg" },
   { year: 2009, month: 6, day: 25, label: "Genie",               img: "/images/eras/2009-genie.jpg" },
   { year: 2010, month: 1, day: 28, label: "Oh!",               img: "/images/eras/2010-oh.jpg" },

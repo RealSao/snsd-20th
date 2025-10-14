@@ -5,6 +5,24 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { useEgg } from "@/egg/EggContext";
 import { monthToNumber, dayToNumber, pad2, ymdKey } from "@/lib/date";
+import Link from "next/link";
+import { DISCOGRAPHY, DiscographyItem } from "@/data/discography";
+
+// helper to be robust to case/spacing
+const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+
+// which three to feature
+const PICKS = ["Into the New World", "The Boys", "Forever 1"];
+
+// find the albums from your data (by title, case-insensitive; falls back if missing)
+const FEATURED: DiscographyItem[] = PICKS.map((name) => {
+  const n = norm(name);
+  return (
+    DISCOGRAPHY.find((a) => norm(a.title) === n) ||
+    // if you maintain keywords, this also works:
+    DISCOGRAPHY.find((a) => (a.keywords ?? []).some((k) => norm(k) === n))
+  );
+}).filter(Boolean) as DiscographyItem[];
 
 
 /* =======================
@@ -389,18 +407,36 @@ export default function AnniversaryLanding() {
       </section>
 
       {/* DISCOGRAPHY */}
-      <section id="discography" className="scroll-mt-24 py-14 border-t border-white/10">
+      <section id="discography" className="scroll-mt-24 py-14 border-top border-white/10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-6">
             <h2 className="text-xl font-bold">Discography</h2>
-            <a href="#discography" className="text-xs hover:text-pink-200">See all albums →</a>
+            <Link href="/discography" className="text-xs hover:text-pink-200">
+              View full discography →
+            </Link>
           </div>
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {["Into the New World", "The Boys", "Forever 1"].map((title, i) => (
-              <motion.div key={i} whileHover={{ y: -4 }} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="aspect-video w-full rounded-xl bg-white/10 border border-white/10" />
-                <div className="mt-3 text-sm font-semibold">{title}</div>
-                <div className="text-xs text-white/70">Album · Tracklist · Listen</div>
+            {(FEATURED.length ? FEATURED : DISCOGRAPHY.slice(0, 3)).map((album) => (
+              <motion.div
+                key={album.id}
+                whileHover={{ y: -4 }}
+                className="rounded-2xl border border-white/10 bg-white/5 p-4"
+              >
+                <Link href={`/discography#${album.slug}`} className="block">
+                  <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl border border-white/10">
+                    <Image
+                      src={album.cover}
+                      alt={`${album.title} cover`}
+                      fill
+                      sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
+                      className="object-cover"
+                      priority
+                    />
+                  </div>
+                  <div className="mt-3 text-sm font-semibold">{album.title}</div>
+                  <div className="text-xs text-white/70">Album · Tracklist · Listen</div>
+                </Link>
               </motion.div>
             ))}
           </div>
@@ -419,7 +455,7 @@ export default function AnniversaryLanding() {
         </div>
       </footer>
 
-      <BackToTop />
+      
     </div>
   );
 }
