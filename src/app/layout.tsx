@@ -10,6 +10,7 @@ import GlobalEgg from "@/components/GlobalEgg";
 import { Badge3D } from "@/components/Badge3D";
 import { Badge3DView } from "@/components/Badge3DView";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 /* Spinning badge modal */
 function NineBadgeModal({ onClose }: { onClose: () => void }) {
@@ -290,6 +291,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
         </EggProvider>
         <Analytics />
+        <SpeedInsights/>
       </body>
     </html>
   );
