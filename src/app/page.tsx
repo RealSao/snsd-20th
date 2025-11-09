@@ -29,9 +29,9 @@ const FEATURED: DiscographyItem[] = PICKS.map((name) => {
    HOMEPAGE SIDE NAV
 ======================= */
 const HOME_SECTIONS = [
-  { id: "timeline",     label: "Era" },
-  { id: "members",      label: "Members" },
-  { id: "discography",  label: "Discography" },
+  { id: "timeline", label: "Era" },
+  { id: "members", label: "Members" },
+  { id: "discography", label: "Discography" },
 ];
 
 function useActiveSection() {
@@ -120,41 +120,41 @@ type Era = { year: number; month: number | string; day?: number | string; label:
 
 const eras: Era[] = [
   { year: 2007, month: 8, day: 5, label: "Into the New World", img: "/images/eras/2007-itnw.jpg" },
-  { year: 2007, month: 11, day: 1, label: "Girls' Generation",   img: "/images/eras/2007-gg.jpg" },
-  { year: 2008, month: 3, day: 13, label: "Baby Baby",          img: "/images/eras/2008-bb.jpg" },
-  { year: 2009, month: 1, day: 5, label: "Gee",                 img: "/images/eras/2009-gee.jpg" },
-  { year: 2009, month: 6, day: 25, label: "Genie",               img: "/images/eras/2009-genie.jpg" },
-  { year: 2010, month: 1, day: 28, label: "Oh!",               img: "/images/eras/2010-oh.jpg" },
-  { year: 2010, month: 3, day: 22, label: "Run Devil Run",               img: "/images/eras/2010-rdr.jpg" },
-  { year: 2010, month: 9, day: 5, label: "Genie (Japanese)",               img: "/images/eras/2010-genie.jpg" },
-  { year: 2010, month: 10, day: 17, label: "Gee (Japanese)",               img: "/images/eras/2010-gee.jpg" },
-  { year: 2010, month: 10, day: 27, label: "Hoot",               img: "/images/eras/2010-hoot.jpg" },
-  { year: 2011, month: 1, day: 25, label: "Run Devil Run (Japanese)",               img: "/images/eras/2011-rdr.jpg" },
-  { year: 2011, month: 4, day: 23, label: "Mr. Taxi (Japanese)",               img: "/images/eras/2011-mrtaxi.jpg" },
-  { year: 2011, month: 6, day: 1, label: "Girls' Generation (Japanese)",               img: "/images/eras/2011-gg.jpg" },
-  { year: 2011, month: 10, day: 19, label: "The Boys",            img: "/images/eras/2011-theboys.jpg" },
-  { year: 2011, month: 12, day: 9, label: "Mr. Taxi (Repackage)",            img: "/images/eras/2011-mrtaxir.jpg" },
-  { year: 2011, month: 12, day: 18, label: "Girls’ Generation ~The Boys~ (Japanese)",            img: "/images/eras/2011-ggtb.jpg" },
-  { year: 2012, month: 6, day: 20, label: "Paparazzi (Japanese)",            img: "/images/eras/2012-paparazzi.jpg" },
-  { year: 2012, month: 9, day: 3, label: "All My Love is for You (Japanese)",            img: "/images/eras/2012-amlify.jpg" },
-  { year: 2012, month: 9, day: 14, label: "Oh! (Japanese)",            img: "/images/eras/2012-oh.jpg" },
-  { year: 2012, month: 11, day: 7, label: "Flower Power (Japanese)",            img: "/images/eras/2012-fp.jpg" },
-  { year: 2012, month: 11, day: 28, label: "Girls & Peace (Japanese)",            img: "/images/eras/2012-gp.jpg" },
-  { year: 2012, month: 12, day: 21, label: "Dancing Queen",         img: "/images/eras/2012-dq.jpg" },
-  { year: 2013, month: 1, day: 1, label: "I Got a Boy",         img: "/images/eras/2013-igab.jpg" },
-  { year: 2013, month: 6, day: 12, label: "Love & Girls (Japanese)",            img: "/images/eras/2013-lg.jpg" },
-  { year: 2013, month: 9, day: 11, label: "Galaxy Supernova (Japanese)",            img: "/images/eras/2013-gs.jpg" },
-  { year: 2013, month: 11, day: 5, label: "My Oh My (Japanese)",            img: "/images/eras/2013-mom.jpg" },
-  { year: 2013, month: 12, day: 10, label: "Love & Peace (Japanese)",            img: "/images/eras/2013-lp.jpg" },
-  { year: 2014, month: 2, day: 24, label: "Mr.Mr.",          img: "/images/eras/2014-mrmr.jpg" },
-  { year: 2014, month: 7, day: 23, label: "The Best (Japanese)",          img: "/images/eras/2014-tb.jpg" },
-  { year: 2015, month: 4, day: 22, label: "Catch Me If You Can (Japanese)",          img: "/images/eras/2015-cmiyc.jpg" },
-  { year: 2015, month: 7, day: 7, label: "Party",          img: "/images/eras/2015-party.jpg" },
-  { year: 2015, month: 8, day: 19, label: "Lion Heart",          img: "/images/eras/2015-lionheart.jpg" },
-  { year: 2016, month: 8, day: 5, label: "Sailing (0805)",          img: "/images/eras/2016-0805.jpg" },
-  { year: 2017, month: 8, day: 4, label: "Holiday Night",       img: "/images/eras/2017-holidaynight.jpg" },
-  { year: 2022, month: 8, day: 5, label: "Forever 1",          img: "/images/eras/2022-forever1.jpg" },
-  { year: 2025, month: 2, day: 14, label: "2025 SMTOWN : THE CULTURE, THE FUTURE - My Everything",          img: "/images/eras/2025-myeverything.jpg" },
+  { year: 2007, month: 11, day: 1, label: "Girls' Generation", img: "/images/eras/2007-gg.jpg" },
+  { year: 2008, month: 3, day: 13, label: "Baby Baby", img: "/images/eras/2008-bb.jpg" },
+  { year: 2009, month: 1, day: 5, label: "Gee", img: "/images/eras/2009-gee.jpg" },
+  { year: 2009, month: 6, day: 25, label: "Genie", img: "/images/eras/2009-genie.jpg" },
+  { year: 2010, month: 1, day: 28, label: "Oh!", img: "/images/eras/2010-oh.jpg" },
+  { year: 2010, month: 3, day: 22, label: "Run Devil Run", img: "/images/eras/2010-rdr.jpg" },
+  { year: 2010, month: 9, day: 5, label: "Genie (Japanese)", img: "/images/eras/2010-genie.jpg" },
+  { year: 2010, month: 10, day: 17, label: "Gee (Japanese)", img: "/images/eras/2010-gee.jpg" },
+  { year: 2010, month: 10, day: 27, label: "Hoot", img: "/images/eras/2010-hoot.jpg" },
+  { year: 2011, month: 1, day: 25, label: "Run Devil Run (Japanese)", img: "/images/eras/2011-rdr.jpg" },
+  { year: 2011, month: 4, day: 23, label: "Mr. Taxi (Japanese)", img: "/images/eras/2011-mrtaxi.jpg" },
+  { year: 2011, month: 6, day: 1, label: "Girls' Generation (Japanese)", img: "/images/eras/2011-gg.jpg" },
+  { year: 2011, month: 10, day: 19, label: "The Boys", img: "/images/eras/2011-theboys.jpg" },
+  { year: 2011, month: 12, day: 9, label: "Mr. Taxi (Repackage)", img: "/images/eras/2011-mrtaxir.jpg" },
+  { year: 2011, month: 12, day: 18, label: "Girls’ Generation ~The Boys~ (Japanese)", img: "/images/eras/2011-ggtb.jpg" },
+  { year: 2012, month: 6, day: 20, label: "Paparazzi (Japanese)", img: "/images/eras/2012-paparazzi.jpg" },
+  { year: 2012, month: 9, day: 3, label: "All My Love is for You (Japanese)", img: "/images/eras/2012-amlify.jpg" },
+  { year: 2012, month: 9, day: 14, label: "Oh! (Japanese)", img: "/images/eras/2012-oh.jpg" },
+  { year: 2012, month: 11, day: 7, label: "Flower Power (Japanese)", img: "/images/eras/2012-fp.jpg" },
+  { year: 2012, month: 11, day: 28, label: "Girls & Peace (Japanese)", img: "/images/eras/2012-gp.jpg" },
+  { year: 2012, month: 12, day: 21, label: "Dancing Queen", img: "/images/eras/2012-dq.jpg" },
+  { year: 2013, month: 1, day: 1, label: "I Got a Boy", img: "/images/eras/2013-igab.jpg" },
+  { year: 2013, month: 6, day: 12, label: "Love & Girls (Japanese)", img: "/images/eras/2013-lg.jpg" },
+  { year: 2013, month: 9, day: 11, label: "Galaxy Supernova (Japanese)", img: "/images/eras/2013-gs.jpg" },
+  { year: 2013, month: 11, day: 5, label: "My Oh My (Japanese)", img: "/images/eras/2013-mom.jpg" },
+  { year: 2013, month: 12, day: 10, label: "Love & Peace (Japanese)", img: "/images/eras/2013-lp.jpg" },
+  { year: 2014, month: 2, day: 24, label: "Mr.Mr.", img: "/images/eras/2014-mrmr.jpg" },
+  { year: 2014, month: 7, day: 23, label: "The Best (Japanese)", img: "/images/eras/2014-tb.jpg" },
+  { year: 2015, month: 4, day: 22, label: "Catch Me If You Can (Japanese)", img: "/images/eras/2015-cmiyc.jpg" },
+  { year: 2015, month: 7, day: 7, label: "Party", img: "/images/eras/2015-party.jpg" },
+  { year: 2015, month: 8, day: 19, label: "Lion Heart", img: "/images/eras/2015-lionheart.jpg" },
+  { year: 2016, month: 8, day: 5, label: "Sailing (0805)", img: "/images/eras/2016-0805.jpg" },
+  { year: 2017, month: 8, day: 4, label: "Holiday Night", img: "/images/eras/2017-holidaynight.jpg" },
+  { year: 2022, month: 8, day: 5, label: "Forever 1", img: "/images/eras/2022-forever1.jpg" },
+  { year: 2025, month: 2, day: 14, label: "2025 SMTOWN : THE CULTURE, THE FUTURE - My Everything", img: "/images/eras/2025-myeverything.jpg" },
 ];
 
 const allMembersOrdered = [
@@ -253,10 +253,16 @@ export default function AnniversaryLanding() {
                 </div>
               </div>
 
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <a href="#timeline" className="px-5 py-2.5 rounded-2xl bg-white text-black text-sm font-semibold hover:opacity-90">Explore Timeline</a>
-                <a href="#discography" className="px-5 py-2.5 rounded-2xl border border-white/20 text-sm hover:bg-white/10">Discography</a>
+              <div className="mt-8">
+                <Link
+                  href="/20th-anniversary-project"
+                  className="inline-block px-5 py-2.5 rounded-2xl bg-white text-black text-sm font-semibold hover:opacity-90"
+                  aria-label="Open the 20th Anniversary Project page"
+                >
+                  Explore Symbiosis
+                </Link>
               </div>
+
 
               <p className="mt-4 text-xs text-white/60">Official anniversary date: Aug 5, 2027 (KST)</p>
             </div>
@@ -280,12 +286,12 @@ export default function AnniversaryLanding() {
                       className="relative rounded-xl overflow-hidden border border-white/10 bg-white/5"
                       {...(isCenter
                         ? {
-                            onMouseDown: startLongPress,
-                            onMouseUp: endLongPress,
-                            onMouseLeave: endLongPress,
-                            onTouchStart: startLongPress,
-                            onTouchEnd: endLongPress,
-                          }
+                          onMouseDown: startLongPress,
+                          onMouseUp: endLongPress,
+                          onMouseLeave: endLongPress,
+                          onTouchStart: startLongPress,
+                          onTouchEnd: endLongPress,
+                        }
                         : {})}
                     >
                       <Image
@@ -301,6 +307,33 @@ export default function AnniversaryLanding() {
                 })}
               </div>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* MEMBERS */}
+      <section id="members" className="scroll-mt-24 py-14 border-t border-white/10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex items-end justify-between mb-6">
+            <h2 className="text-xl font-bold">Members</h2>
+            <a href="#members" className="text-xs hover:text-pink-200">View all profiles →</a>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {members.map((m) => (
+              <motion.div key={m.name} whileHover={{ scale: 1.02 }} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10">
+                  <Image
+                    src={m.img}
+                    alt={`${m.name} portrait`}
+                    fill
+                    sizes="(min-width:1024px) 25vw, (min-width:640px) 33vw, 50vw"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="mt-3 text-sm font-semibold">{m.name}</div>
+                <div className="text-xs text-white/70">Profile · Solo works · Facts</div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -379,33 +412,6 @@ export default function AnniversaryLanding() {
         </div>
       </section>
 
-      {/* MEMBERS */}
-      <section id="members" className="scroll-mt-24 py-14 border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-6">
-            <h2 className="text-xl font-bold">Members</h2>
-            <a href="#members" className="text-xs hover:text-pink-200">View all profiles →</a>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {members.map((m) => (
-              <motion.div key={m.name} whileHover={{ scale: 1.02 }} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-white/10">
-                  <Image
-                    src={m.img}
-                    alt={`${m.name} portrait`}
-                    fill
-                    sizes="(min-width:1024px) 25vw, (min-width:640px) 33vw, 50vw"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="mt-3 text-sm font-semibold">{m.name}</div>
-                <div className="text-xs text-white/70">Profile · Solo works · Facts</div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* DISCOGRAPHY */}
       <section id="discography" className="scroll-mt-24 py-14 border-top border-white/10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -455,7 +461,7 @@ export default function AnniversaryLanding() {
         </div>
       </footer>
 
-      
+
     </div>
   );
 }
